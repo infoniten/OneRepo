@@ -1,0 +1,191 @@
+integration:
+  name: sigma-delta-sigmaboy
+  description: это тестовый интеграционный тест
+  segments:
+  - segment: delta
+    elements:
+    - type: kafka
+      name: DELTA.TOPIC.EVENT.V1
+      partitions: 10
+      configuration:
+        max.message.bytes: 4194304
+        retention.ms: 432000000
+      security:
+        principals:
+        - principal: CN=SomeDick, OUI=Test
+          operations:
+          - read
+          - describe
+          group:
+          - someGroup
+        - principal: CN=SomeDick2, OUI=Test
+          operations:
+          - write
+          - describe
+      connectionInfo:
+        host: node0.host.local
+        port: 80
+        url: https://node0.host.local/api
+      id: 0
+      next: 1
+    - type: k8s
+      namespace: testNamespace
+      subType: kafka-to-rest
+      someParameter: testValue
+      services:
+      - service: quarkus
+        subType: kafka-to-rest
+        configs:
+          topicName: DELTA.TOPIC.EVENT.V1
+          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+          kafkaGroup: someGroup
+          restHost: nginxHost:443
+        connectionInfo:
+          host: node2.host.local
+          port: 80
+          url: https://node2.host.local/api
+        destinationInfo:
+          host: egress.host.local
+          port: 8080
+          url: https://egress.host.local/api
+        id: 2
+        next: 3
+      - service: egress
+        connectionInfo:
+          host: node3.host.local
+          port: 3000
+          url: https://node3.host.local/api
+        destinationInfo:
+          host: k8s.host.local
+          port: 80
+          url: https://k8s.host.local/api
+        id: 3
+        next: 4
+      connectionInfo:
+        host: node1.host.local
+        port: 8080
+        url: https://node1.host.local/api
+      destinationInfo:
+        host: nginx.host.local
+        port: 8080
+        url: https://nginx.host.local/api
+      id: 1
+      clusterName: cluster-1
+      next: 2
+  - segment: omega
+    elements:
+    - type: nginx
+      requestType: post
+      requestSchemaValidation: ../requestSchema.xsd
+      responseSchemaValidation: ../responseSchema.xsd
+      nginxPort: 443
+      modSecurityTurnedOffRules:
+      - modsec123
+      - modsec321
+      remoteHost: alphaHost:443
+      connectionInfo:
+        host: node4.host.local
+        port: 443
+        url: https://node4.host.local/api
+      destinationInfo:
+        host: geo-load-balancer.host.local
+        port: 9092
+        url: https://geo-load-balancer.host.local/api
+      id: 4
+      next: 5
+  - segment: alpha
+    elements:
+    - type: geo-load-balancer
+      hostname: alphaHost
+      servers:
+      - host: alphaServer1
+        port: 443
+      - host: alphaServer2
+        port: 443
+      connectionInfo:
+        host: node5.host.local
+        port: 9092
+        url: https://node5.host.local/api
+      destinationInfo:
+        host: ingress.host.local
+        port: 8080
+        url: https://ingress.host.local/api
+      id: 5
+      next: 6
+    - type: k8s
+      namespace: testNamespace
+      subType: rest-to-kafka
+      someParameter: testValue
+      services:
+      - service: ingress
+        dnName: CN=SomeDN
+        connectionInfo:
+          host: node7.host.local
+          port: 9092
+          url: https://node7.host.local/api
+        destinationInfo:
+          host: quarkus.host.local
+          port: 9092
+          url: https://quarkus.host.local/api
+        id: 7
+        next: 8
+      - service: quarkus
+        subType: kafka-to-rest
+        configs:
+          topicName: DELTA.TOPIC.EVENT.V1
+          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+        connectionInfo:
+          host: node8.host.local
+          port: 443
+          url: https://node8.host.local/api
+        destinationInfo:
+          host: egress.host.local
+          port: 443
+          url: https://egress.host.local/api
+        id: 8
+        next: 9
+      - service: egress
+        connectionInfo:
+          host: node9.host.local
+          port: 443
+          url: https://node9.host.local/api
+        destinationInfo:
+          host: k8s.host.local
+          port: 8080
+          url: https://k8s.host.local/api
+        id: 9
+        next: 10
+      connectionInfo:
+        host: node6.host.local
+        port: 80
+        url: https://node6.host.local/api
+      destinationInfo:
+        host: kafka.host.local
+        port: 9092
+        url: https://kafka.host.local/api
+      id: 6
+      clusterName: cluster-1
+      next: 7
+    - type: kafka
+      name: ALPHA.TOPIC.EVENT.V1
+      partitions: 10
+      configuration:
+        max.message.bytes: 4194304
+        retention.ms: 432000000
+      security:
+        principals:
+        - principal: CN=SomeDick, OUI=Test
+          operations:
+          - read
+          - describe
+          group:
+          - someGroup
+        - principal: CN=SomeDick2, OUI=Test
+          operations:
+          - write
+          - describe
+      connectionInfo:
+        host: node10.host.local
+        port: 3000
+        url: https://node10.host.local/api
+      id: 10

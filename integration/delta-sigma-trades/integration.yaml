@@ -1,5 +1,5 @@
 integration:
-  name: delta-sigma-trades
+  name: sigma-delta-sigmaboy
   description: это тестовый интеграционный тест
   segments:
   - segment: delta
@@ -71,7 +71,7 @@ integration:
         url: https://nginx.host.local/api
       id: 1
       clusterName: cluster-1
-      next: 2
+      next: 4
   - segment: omega
     elements:
     - type: nginx
@@ -165,7 +165,7 @@ integration:
         url: https://kafka.host.local/api
       id: 6
       clusterName: cluster-1
-      next: 7
+      next: 10
     - type: kafka
       name: ALPHA.TOPIC.EVENT.V1
       partitions: 10

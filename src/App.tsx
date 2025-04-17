@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Container, CssBaseline, CircularProgress, Typography } from '@mui/material';
 import IntegrationList from './components/IntegrationList/IntegrationList';
-import Segment from './components/Segment/Segment';
+import IntegrationFlow from './components/IntegrationFlow/IntegrationFlow';
 import { ElementDetailsModal } from './components/ElementDetailsModal/ElementDetailsModal';
 import { Integration, Element, Service } from './types/integration';
 import { loadIntegrations } from './utils/integrationLoader';
@@ -88,18 +88,14 @@ function App() {
       </Box>
 
       {/* Основной контент */}
-      <Box sx={{ flexGrow: 1, p: 3, overflowY: 'auto' }}>
-        <Container maxWidth={false}>
-          {selectedIntegration?.segments.map((segment, index) => (
-            <Segment
-              key={segment.segment}
-              segment={segment}
-              selectedElementId={selectedElement?.id || null}
-              onElementClick={handleElementClick}
-              isLastSegment={index === selectedIntegration.segments.length - 1}
-            />
-          ))}
-        </Container>
+      <Box sx={{ flexGrow: 1, height: '100%', position: 'relative' }}>
+        {selectedIntegration && (
+          <IntegrationFlow
+            integration={selectedIntegration}
+            selectedElementId={selectedElement?.id || null}
+            onElementClick={handleElementClick}
+          />
+        )}
       </Box>
 
       {/* Модальное окно с деталями */}

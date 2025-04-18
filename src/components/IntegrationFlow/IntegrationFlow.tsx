@@ -12,9 +12,16 @@ import ReactFlow, {
   BackgroundVariant,
   ReactFlowProvider,
   useViewport,
+  Panel,
+  useReactFlow,
+  MarkerType,
 } from 'reactflow';
+import { motion } from 'framer-motion';
 import dagre from '@dagrejs/dagre';
-import { Box, Paper, Typography } from '@mui/material';
+import { Box, Paper, Typography, IconButton, Tooltip } from '@mui/material';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import CenterFocusStrongIcon from '@mui/icons-material/CenterFocusStrong';
 import { Element, Integration } from '../../types/integration';
 import 'reactflow/dist/style.css';
 
@@ -22,6 +29,19 @@ interface IntegrationFlowProps {
   integration: Integration;
   onElementClick: (elementId: string | number) => void;
   selectedElementId: string | number | null;
+}
+
+interface K8sNodeData {
+  id: string;
+  label: string;
+  type: string;
+  services: Array<{
+    id: string;
+    label: string;
+    type: string;
+    selected: boolean;
+  }>;
+  onServiceClick: (id: string) => void;
 }
 
 // Кастомная нода для обычного элемента
@@ -42,23 +62,52 @@ const CustomNode = ({ data, isConnectable, selected }: NodeProps) => {
   };
 
   return (
-    <div
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.8, opacity: 0 }}
+      transition={{ 
+        type: "spring",
+        stiffness: 260,
+        damping: 20,
+        duration: 0.3 
+      }}
       style={{
-        padding: '10px',
-        borderRadius: '8px',
+        padding: '12px',
+        borderRadius: '12px',
         border: `2px solid ${getNodeColor(data.type)}`,
         background: selected ? '#f8f9fa' : 'white',
-        minWidth: '180px',
+        minWidth: '200px',
+        boxShadow: selected 
+          ? `0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px ${getNodeColor(data.type)}22` 
+          : '0 4px 8px rgba(0,0,0,0.05)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transform: selected ? 'translateY(-2px)' : 'none',
       }}
     >
-      <Handle type="target" position={Position.Left} isConnectable={isConnectable} />
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        isConnectable={isConnectable}
+        style={{ 
+          background: getNodeColor(data.type),
+          width: '12px',
+          height: '12px',
+          border: '2px solid white',
+          boxShadow: '0 0 0 2px ' + getNodeColor(data.type)
+        }}
+      />
       <div>
         <Typography
           variant="subtitle2"
           sx={{
-            fontWeight: 'bold',
+            fontWeight: 600,
             color: getNodeColor(data.type),
-            fontSize: '1rem',
+            fontSize: '1.1rem',
+            mb: 0.5,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
           }}
         >
           {data.label}
@@ -69,13 +118,25 @@ const CustomNode = ({ data, isConnectable, selected }: NodeProps) => {
             color: 'text.secondary',
             display: 'block',
             fontSize: '0.875rem',
+            opacity: 0.8,
           }}
         >
           {data.type}
         </Typography>
       </div>
-      <Handle type="source" position={Position.Right} isConnectable={isConnectable} />
-    </div>
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        isConnectable={isConnectable}
+        style={{ 
+          background: getNodeColor(data.type),
+          width: '12px',
+          height: '12px',
+          border: '2px solid white',
+          boxShadow: '0 0 0 2px ' + getNodeColor(data.type)
+        }}
+      />
+    </motion.div>
   );
 };
 
@@ -150,81 +211,122 @@ const ServiceArrow = () => (
   />
 );
 
-// Кастомная нода для K8s с сервисами
-const K8sNode = ({ data, isConnectable, selected }: NodeProps) => {
-  const getNodeColor = (type: string): string => {
-    switch (type.toLowerCase()) {
-      case 'k8s':
-        return '#2196F3';
-      default:
-        return '#607D8B';
-    }
-  };
+const getNodeColor = (type: string): string => {
+  switch (type.toLowerCase()) {
+    case 'k8s':
+      return '#2196F3';
+    default:
+      return '#607D8B';
+  }
+};
 
+const nodeStyles = {
+  container: {
+    padding: '15px',
+    borderRadius: '12px',
+    minWidth: '300px',
+  },
+  title: {
+    fontWeight: 'bold',
+    fontSize: '1rem',
+    marginBottom: '8px',
+  },
+  subtitle: {
+    color: 'text.secondary',
+    display: 'block',
+    fontSize: '0.875rem',
+    marginBottom: '16px',
+  },
+  servicesContainer: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '24px',
+    padding: '8px 24px',
+    borderRadius: '8px',
+    transition: 'all 0.3s ease',
+  },
+  serviceItem: {
+    padding: '8px',
+    borderRadius: '6px',
+    transition: 'all 0.2s ease',
+  }
+};
+
+const K8sNode = ({ data, isConnectable, selected }: NodeProps<K8sNodeData>) => {
+  const color = useMemo(() => getNodeColor('k8s'), []);
+  
   return (
-    <div
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ 
+        type: "spring",
+        stiffness: 260,
+        damping: 20 
+      }}
       style={{
-        padding: '15px',
-        borderRadius: '12px',
-        border: `2px solid ${getNodeColor('k8s')}`,
+        ...nodeStyles.container,
+        border: `2px solid ${color}`,
         background: selected ? '#f8f9fa' : 'white',
-        minWidth: '300px',
+        boxShadow: selected ? '0 4px 12px rgba(0,0,0,0.1)' : '0 2px 6px rgba(0,0,0,0.05)',
       }}
     >
-      <Handle type="target" position={Position.Left} isConnectable={isConnectable} />
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        isConnectable={isConnectable}
+        style={{ background: color }}
+      />
       <div>
         <Typography
           variant="subtitle2"
           sx={{
-            fontWeight: 'bold',
-            color: getNodeColor('k8s'),
-            fontSize: '1rem',
-            mb: 1,
+            ...nodeStyles.title,
+            color
           }}
         >
           {data.label}
         </Typography>
         <Typography
           variant="caption"
-          sx={{
-            color: 'text.secondary',
-            display: 'block',
-            fontSize: '0.875rem',
-            mb: 2,
-          }}
+          sx={nodeStyles.subtitle}
         >
           {data.type}
         </Typography>
 
-        {/* Сервисы */}
         <Box
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 3,
-            p: 1,
-            px: 3, // Добавляем отступы по бокам для стрелок
+            ...nodeStyles.servicesContainer,
             backgroundColor: 'rgba(33, 150, 243, 0.05)',
-            borderRadius: '8px',
+            '&:hover': {
+              backgroundColor: 'rgba(33, 150, 243, 0.08)',
+            }
           }}
         >
-          {data.services?.map((service: any, index: number) => (
-            <Box
+          {data.services?.map((service, index) => (
+            <motion.div
               key={service.id}
-              sx={{
-                position: 'relative',
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ 
+                type: "spring",
+                stiffness: 500,
+                damping: 30,
+                delay: index * 0.1 
               }}
+              style={{ position: 'relative' }}
             >
               {index === 0 && <HorizontalArrow direction="left" />}
               <Box
                 sx={{
-                  p: 1,
-                  borderRadius: '6px',
-                  border: '1px solid #2196F3',
+                  ...nodeStyles.serviceItem,
+                  border: `1px solid ${color}`,
                   backgroundColor: service.selected ? '#e3f2fd' : 'white',
                   cursor: 'pointer',
                   '&:hover': {
                     backgroundColor: '#e3f2fd',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 8px rgba(33, 150, 243, 0.15)',
                   },
                 }}
                 onClick={() => data.onServiceClick(service.id)}
@@ -233,7 +335,7 @@ const K8sNode = ({ data, isConnectable, selected }: NodeProps) => {
                   variant="subtitle2"
                   sx={{
                     fontWeight: 'bold',
-                    color: '#2196F3',
+                    color: color,
                     fontSize: '0.875rem',
                   }}
                 >
@@ -252,18 +354,18 @@ const K8sNode = ({ data, isConnectable, selected }: NodeProps) => {
               </Box>
               {index < data.services.length - 1 && <ServiceArrow />}
               {index === data.services.length - 1 && <HorizontalArrow direction="right" />}
-            </Box>
+            </motion.div>
           ))}
         </Box>
       </div>
-      <Handle type="source" position={Position.Right} isConnectable={isConnectable} />
-    </div>
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        isConnectable={isConnectable}
+        style={{ background: color }}
+      />
+    </motion.div>
   );
-};
-
-const nodeTypes = {
-  custom: CustomNode,
-  k8s: K8sNode,
 };
 
 // Функция для автоматического расположения элементов
@@ -272,7 +374,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   dagreGraph.setGraph({ rankdir: direction });
 
-  nodes.forEach((node) => {
+  nodes.forEach((node: Node) => {
     dagreGraph.setNode(node.id, { width: node.type === 'k8s' ? 300 : 180, height: node.type === 'k8s' ? 200 : 80 });
   });
 
@@ -282,7 +384,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
 
   dagre.layout(dagreGraph);
 
-  const layoutedNodes = nodes.map((node) => {
+  const layoutedNodes = nodes.map((node: Node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
     return {
       ...node,
@@ -296,81 +398,86 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
   return { nodes: layoutedNodes, edges };
 };
 
-const NetworkSegments = ({ segments, segmentGroups }: { 
-  segments: Integration['segments'];
-  segmentGroups: Record<string, { minX: number; maxX: number; minY: number; maxY: number; nodes: Node[] }>;
-}) => {
-  const { x, y, zoom } = useViewport();
-
-  const getSegmentColor = (name: string): string => {
-    switch (name.toLowerCase()) {
-      case 'delta':
-        return 'rgba(76, 175, 80, 0.1)';
-      case 'omega':
-        return 'rgba(255, 152, 0, 0.1)';
-      case 'alpha':
-        return 'rgba(33, 150, 243, 0.1)';
-      default:
-        return 'rgba(96, 125, 139, 0.1)';
-    }
-  };
-
-  return (
-    <>
-      {segments.map((segment) => {
-        const bounds = segmentGroups[segment.segment];
-        if (!bounds) return null;
-
-        const width = bounds.maxX - bounds.minX;
-        const height = bounds.maxY - bounds.minY;
-
-        const style = {
-          transform: `translate(${bounds.minX * zoom + x}px, ${bounds.minY * zoom + y}px)`,
-          width: width * zoom,
-          height: height * zoom,
-          position: 'absolute' as const,
-          backgroundColor: getSegmentColor(segment.segment),
-          border: `1px solid ${getSegmentColor(segment.segment).replace('0.1', '0.3')}`,
-          borderRadius: '16px',
-          zIndex: -1,
-          pointerEvents: 'none' as const,
-          transition: 'transform 0.1s ease-out, width 0.1s ease-out, height 0.1s ease-out',
-        };
-
-        const labelStyle = {
-          transform: `translate(${(bounds.minX + 20) * zoom + x}px, ${(bounds.minY - 30) * zoom + y}px)`,
-          position: 'absolute' as const,
-          backgroundColor: '#fff',
-          padding: '4px 12px',
-          borderRadius: '8px',
-          border: `1px solid ${getSegmentColor(segment.segment).replace('0.1', '0.8')}`,
-          color: getSegmentColor(segment.segment).replace('0.1', '0.8'),
-          fontSize: `${Math.max(0.875 * zoom, 0.7)}rem`,
-          fontWeight: 500,
-          zIndex: 5,
-          pointerEvents: 'none' as const,
-          transition: 'transform 0.1s ease-out, font-size 0.1s ease-out',
-          whiteSpace: 'nowrap' as const,
-        };
-
-        return (
-          <React.Fragment key={segment.segment}>
-            <div style={style} className="segment-background" />
-            <div style={labelStyle} className="segment-label">
-              Сегмент: {segment.segment}
-            </div>
-          </React.Fragment>
-        );
-      })}
-    </>
-  );
-};
-
 export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
   integration,
   onElementClick,
   selectedElementId,
 }) => {
+  const nodeTypes = useMemo(() => ({
+    custom: CustomNode,
+    k8s: K8sNode,
+  }), []);
+
+  const NetworkSegments = useCallback(({ segments, segmentGroups }: { 
+    segments: Integration['segments'];
+    segmentGroups: Record<string, { minX: number; maxX: number; minY: number; maxY: number; nodes: Node[] }>;
+  }) => {
+    const { x, y, zoom } = useViewport();
+
+    const getSegmentColor = (name: string): string => {
+      switch (name.toLowerCase()) {
+        case 'delta':
+          return 'rgba(76, 175, 80, 0.1)';
+        case 'omega':
+          return 'rgba(255, 152, 0, 0.1)';
+        case 'alpha':
+          return 'rgba(33, 150, 243, 0.1)';
+        default:
+          return 'rgba(96, 125, 139, 0.1)';
+      }
+    };
+
+    return (
+      <>
+        {segments.map((segment) => {
+          const bounds = segmentGroups[segment.segment];
+          if (!bounds) return null;
+
+          const width = bounds.maxX - bounds.minX;
+          const height = bounds.maxY - bounds.minY;
+
+          const style = {
+            transform: `translate(${bounds.minX * zoom + x}px, ${bounds.minY * zoom + y}px)`,
+            width: width * zoom,
+            height: height * zoom,
+            position: 'absolute' as const,
+            backgroundColor: getSegmentColor(segment.segment),
+            border: `1px solid ${getSegmentColor(segment.segment).replace('0.1', '0.3')}`,
+            borderRadius: '16px',
+            zIndex: -1,
+            pointerEvents: 'none' as const,
+            transition: 'transform 0.1s ease-out, width 0.1s ease-out, height 0.1s ease-out',
+          };
+
+          const labelStyle = {
+            transform: `translate(${(bounds.minX + 20) * zoom + x}px, ${(bounds.minY - 30) * zoom + y}px)`,
+            position: 'absolute' as const,
+            backgroundColor: '#fff',
+            padding: '4px 12px',
+            borderRadius: '8px',
+            border: `1px solid ${getSegmentColor(segment.segment).replace('0.1', '0.8')}`,
+            color: getSegmentColor(segment.segment).replace('0.1', '0.8'),
+            fontSize: `${Math.max(0.875 * zoom, 0.7)}rem`,
+            fontWeight: 500,
+            zIndex: 5,
+            pointerEvents: 'none' as const,
+            transition: 'transform 0.1s ease-out, font-size 0.1s ease-out',
+            whiteSpace: 'nowrap' as const,
+          };
+
+          return (
+            <React.Fragment key={segment.segment}>
+              <div style={style} className="segment-background" />
+              <div style={labelStyle} className="segment-label">
+                Сегмент: {segment.segment}
+              </div>
+            </React.Fragment>
+          );
+        })}
+      </>
+    );
+  }, []);
+
   const { initialNodes, initialEdges, segmentGroups } = useMemo(() => {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
@@ -444,6 +551,7 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const { fitView, zoomIn, zoomOut } = useReactFlow();
 
   useLayoutEffect(() => {
     const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
@@ -475,9 +583,18 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
     [onElementClick]
   );
 
-  const nodeTypes = useMemo(() => ({
-    custom: CustomNode,
-    k8s: K8sNode,
+  const edgeOptions = useMemo(() => ({
+    style: {
+      strokeWidth: 2,
+      stroke: '#2196F3',
+    },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: '#2196F3',
+      width: 20,
+      height: 20,
+    },
+    animated: true,
   }), []);
 
   return (
@@ -489,10 +606,32 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
           bgcolor: 'transparent',
           overflow: 'hidden',
           position: 'relative',
+          borderRadius: 2,
+          '& .react-flow__edge-path': {
+            stroke: '#2196F3',
+            strokeWidth: 2,
+            filter: 'drop-shadow(0 2px 4px rgba(33, 150, 243, 0.2))',
+          },
+          '& .react-flow__edge-path:hover': {
+            stroke: '#1976D2',
+            strokeWidth: 3,
+          },
+          '& .react-flow__handle': {
+            transition: 'all 0.2s ease',
+          },
+          '& .react-flow__handle:hover': {
+            transform: 'scale(1.2)',
+          },
         }}
       >
         <ReactFlowProvider>
-          <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4 }}
+            style={{ width: '100%', height: '100%', position: 'relative' }}
+          >
             <ReactFlow
               nodes={nodes}
               edges={edges}
@@ -510,12 +649,77 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
               panOnDrag={true}
               zoomOnScroll={true}
               preventScrolling={true}
+              defaultEdgeOptions={edgeOptions}
+              fitViewOptions={{
+                padding: 0.2,
+                duration: 800,
+              }}
             >
               <NetworkSegments segments={integration.segments} segmentGroups={segmentGroups} />
-              <Background variant={BackgroundVariant.Dots} />
-              <Controls />
+              <Background 
+                variant={BackgroundVariant.Dots} 
+                color="#99999922"
+                size={1}
+                gap={16}
+              />
+              <Controls 
+                showInteractive={false}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  padding: '8px',
+                  backgroundColor: 'white',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                }}
+              />
+              <Panel position="top-right" style={{ display: 'flex', gap: '8px' }}>
+                <Tooltip title="Уменьшить">
+                  <IconButton 
+                    onClick={() => zoomOut()}
+                    sx={{
+                      bgcolor: 'white',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      '&:hover': {
+                        bgcolor: '#f5f5f5',
+                      }
+                    }}
+                  >
+                    <ZoomOutIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Увеличить">
+                  <IconButton 
+                    onClick={() => zoomIn()}
+                    sx={{
+                      bgcolor: 'white',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      '&:hover': {
+                        bgcolor: '#f5f5f5',
+                      }
+                    }}
+                  >
+                    <ZoomInIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="По центру">
+                  <IconButton 
+                    onClick={() => fitView()}
+                    sx={{
+                      bgcolor: 'white',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      '&:hover': {
+                        bgcolor: '#f5f5f5',
+                      }
+                    }}
+                  >
+                    <CenterFocusStrongIcon />
+                  </IconButton>
+                </Tooltip>
+              </Panel>
             </ReactFlow>
-          </div>
+          </motion.div>
         </ReactFlowProvider>
       </Paper>
     </Box>

@@ -18,11 +18,14 @@ export function normalizeSegmentName(name: string): string {
 // Функция для получения списка доступных интеграций
 async function getAvailableIntegrations(): Promise<string[]> {
   try {
+    console.log('Fetching integration list...');
     const response = await fetch('/api/integrations/list');
     if (!response.ok) {
-      throw new Error('Failed to fetch integration list');
+      throw new Error(`Failed to fetch integration list: ${response.statusText}`);
     }
-    return await response.json();
+    const paths = await response.json();
+    console.log('Received integration paths:', paths);
+    return paths;
   } catch (error) {
     console.error('Error fetching integration list:', error);
     return [];
@@ -32,6 +35,7 @@ async function getAvailableIntegrations(): Promise<string[]> {
 // Функция для загрузки конкретной интеграции
 async function loadIntegration(path: string): Promise<Integration | null> {
   try {
+    console.log(`Loading integration from path: ${path}`);
     const response = await fetch(path);
     if (!response.ok) {
       console.warn(`Failed to load integration file ${path}: ${response.statusText}`);
@@ -39,7 +43,10 @@ async function loadIntegration(path: string): Promise<Integration | null> {
     }
     
     const yamlText = await response.text();
+    console.log(`Received YAML content for ${path}:`, yamlText.substring(0, 100) + '...');
+    
     const parsed = YAML.parse(yamlText);
+    console.log(`Parsed YAML for ${path}:`, parsed);
     
     if (!parsed || !parsed.integration || !parsed.integration.segments) {
       console.warn(`Invalid or empty integration file: ${path}`);
@@ -49,7 +56,7 @@ async function loadIntegration(path: string): Promise<Integration | null> {
     const integrationName = getIntegrationNameFromPath(path);
     console.log('Parsed integration name:', integrationName);
     
-    return {
+    const result = {
       name: integrationName,
       description: parsed.integration.description || '',
       segments: parsed.integration.segments.map((segment: any) => ({
@@ -57,6 +64,9 @@ async function loadIntegration(path: string): Promise<Integration | null> {
         elements: segment.elements || []
       }))
     };
+    
+    console.log(`Successfully loaded integration ${integrationName}:`, result);
+    return result;
   } catch (error) {
     console.error(`Error processing integration file ${path}:`, error);
     return null;

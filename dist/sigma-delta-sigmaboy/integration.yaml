@@ -1,6 +1,6 @@
 integration:
   name: sigma-delta-sigmaboy
-  description: это тестовый интеграционный тест
+  description: это стебный интеграционный поток для лулзов
   segments:
   - segment: delta
     elements:

@@ -86,7 +86,7 @@ export const ElementDetailsModal: React.FC<ElementDetailsModalProps> = ({ elemen
     };
   };
 
-  const getCommonSettings = (element: Element | Service) => {
+  const getCommonSettings = (_: Element | Service) => {
     return {
       max_buff_size: undefined,
       redelivery_count: undefined,

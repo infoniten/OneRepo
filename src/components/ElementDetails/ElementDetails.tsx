@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Box, Typography, Paper, List, ListItem, ListItemText } from '@mui/material';
-import { Element, Service, SecurityPrincipal, ConnectionInfo } from '../../types/integration';
+import { Element, Service, SecurityPrincipal } from '../../types/integration';
 
 interface ElementDetailsProps {
   element: Element | Service | null;

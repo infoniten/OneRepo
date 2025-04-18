@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Container, CssBaseline, CircularProgress, Typography } from '@mui/material';
+import { useState, useEffect, useCallback } from 'react';
+import { Box, CssBaseline, CircularProgress, Typography } from '@mui/material';
 import IntegrationList from './components/IntegrationList/IntegrationList';
 import IntegrationFlow from './components/IntegrationFlow/IntegrationFlow';
 import { ElementDetailsModal } from './components/ElementDetailsModal/ElementDetailsModal';
@@ -14,31 +14,61 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchIntegrations = async () => {
-      try {
-        const loadedIntegrations = await loadIntegrations();
+  // Функция для загрузки списка интеграций
+  const fetchIntegrations = useCallback(async () => {
+    try {
+      const loadedIntegrations = await loadIntegrations();
+      
+      // Проверяем, изменился ли список интеграций
+      const hasChanges = JSON.stringify(loadedIntegrations) !== JSON.stringify(integrations);
+      
+      if (hasChanges) {
         setIntegrations(loadedIntegrations);
-        if (loadedIntegrations.length > 0) {
+        
+        // Если нет выбранной интеграции, выбираем первую
+        if (!selectedIntegration && loadedIntegrations.length > 0) {
           setSelectedIntegration(loadedIntegrations[0]);
+        } else if (selectedIntegration) {
+          // Если есть выбранная интеграция, обновляем её данные
+          const updatedIntegration = loadedIntegrations.find(
+            integration => integration.name === selectedIntegration.name
+          );
+          if (updatedIntegration) {
+            setSelectedIntegration(updatedIntegration);
+          } else if (loadedIntegrations.length > 0) {
+            // Если выбранная интеграция больше не существует, выбираем первую
+            setSelectedIntegration(loadedIntegrations[0]);
+          }
         }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Ошибка загрузки интеграций');
-      } finally {
+      }
+      
+      if (loading) {
         setLoading(false);
       }
-    };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка загрузки интеграций');
+      setLoading(false);
+    }
+  }, [integrations, selectedIntegration, loading]);
 
+  // Инициализация и настройка интервала обновления
+  useEffect(() => {
     fetchIntegrations();
-  }, []);
 
-  const handleIntegrationSelect = (integration: Integration) => {
+    const intervalId = setInterval(fetchIntegrations, 5000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [fetchIntegrations]);
+
+  const handleIntegrationSelect = useCallback((integration: Integration) => {
     setSelectedIntegration(integration);
     setSelectedElement(null);
     setIsModalOpen(false);
-  };
+  }, []);
 
-  const handleElementClick = (elementId: string | number) => {
+  const handleElementClick = useCallback((elementId: string | number) => {
     let element: Element | Service | null = null;
     
     selectedIntegration?.segments.forEach(segment => {
@@ -56,7 +86,7 @@ function App() {
 
     setSelectedElement(element);
     setIsModalOpen(true);
-  };
+  }, [selectedIntegration]);
 
   if (loading) {
     return (
@@ -91,6 +121,7 @@ function App() {
       <Box sx={{ flexGrow: 1, height: '100%', position: 'relative' }}>
         {selectedIntegration && (
           <IntegrationFlow
+            key={selectedIntegration.name}
             integration={selectedIntegration}
             selectedElementId={selectedElement?.id || null}
             onElementClick={handleElementClick}

@@ -11,12 +11,11 @@ import ReactFlow, {
   useEdgesState,
   BackgroundVariant,
   ReactFlowProvider,
-  useReactFlow,
   useViewport,
 } from 'reactflow';
 import dagre from '@dagrejs/dagre';
 import { Box, Paper, Typography } from '@mui/material';
-import { Element, Integration, Service, Segment } from '../../types/integration';
+import { Element, Integration } from '../../types/integration';
 import 'reactflow/dist/style.css';
 
 interface IntegrationFlowProps {
@@ -150,66 +149,6 @@ const ServiceArrow = () => (
     }}
   />
 );
-
-// Компонент сегмента сети с использованием ReactFlow координат
-const NetworkSegmentBackground = ({ segment, bounds }: { segment: string; bounds: { minX: number; maxX: number; minY: number; maxY: number } }) => {
-  const { project, getZoom } = useReactFlow();
-  const width = bounds.maxX - bounds.minX;
-  const height = bounds.maxY - bounds.minY;
-
-  const getSegmentColor = (name: string): string => {
-    switch (name.toLowerCase()) {
-      case 'delta':
-        return 'rgba(76, 175, 80, 0.1)';
-      case 'omega':
-        return 'rgba(255, 152, 0, 0.1)';
-      case 'alpha':
-        return 'rgba(33, 150, 243, 0.1)';
-      default:
-        return 'rgba(96, 125, 139, 0.1)';
-    }
-  };
-
-  const position = project({ x: bounds.minX, y: bounds.minY });
-  const zoom = getZoom();
-  const scaledWidth = width * zoom;
-  const scaledHeight = height * zoom;
-
-  return (
-    <>
-      <div
-        style={{
-          transform: `translate(${position.x}px, ${position.y}px)`,
-          width: scaledWidth,
-          height: scaledHeight,
-          position: 'absolute',
-          backgroundColor: getSegmentColor(segment),
-          border: `1px solid ${getSegmentColor(segment).replace('0.1', '0.3')}`,
-          borderRadius: '16px',
-          zIndex: -1,
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          transform: `translate(${position.x + 20}px, ${position.y - 30}px)`,
-          position: 'absolute',
-          backgroundColor: '#fff',
-          padding: '4px 12px',
-          borderRadius: '8px',
-          border: `1px solid ${getSegmentColor(segment).replace('0.1', '0.8')}`,
-          color: getSegmentColor(segment).replace('0.1', '0.8'),
-          fontSize: '0.875rem',
-          fontWeight: 500,
-          zIndex: 5,
-          pointerEvents: 'none',
-        }}
-      >
-        Сегмент: {segment}
-      </div>
-    </>
-  );
-};
 
 // Кастомная нода для K8s с сервисами
 const K8sNode = ({ data, isConnectable, selected }: NodeProps) => {
@@ -427,7 +366,7 @@ const NetworkSegments = ({ segments, segmentGroups }: {
   );
 };
 
-export const IntegrationFlow: React.FC<IntegrationFlowProps> = ({
+export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
   integration,
   onElementClick,
   selectedElementId,
@@ -528,13 +467,18 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = ({
   }, [initialNodes, initialEdges, setNodes, setEdges, segmentGroups]);
 
   const onNodeClick = useCallback(
-    (event: React.MouseEvent, node: Node) => {
-      if (node.type !== 'k8s') {
+    (_event: React.MouseEvent, node: Node) => {
+      if (onElementClick && node.id) {
         onElementClick(node.id);
       }
     },
     [onElementClick]
   );
+
+  const nodeTypes = useMemo(() => ({
+    custom: CustomNode,
+    k8s: K8sNode,
+  }), []);
 
   return (
     <Box sx={{ height: '100%', width: '100%', position: 'relative' }}>
@@ -576,6 +520,8 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = ({
       </Paper>
     </Box>
   );
-};
+});
+
+IntegrationFlow.displayName = 'IntegrationFlow';
 
 export default IntegrationFlow; 

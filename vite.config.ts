@@ -17,6 +17,10 @@ export default defineConfig({
     watch: {
       usePolling: true,
     },
+    proxy: {
+      '/api': 'http://localhost:3001',
+      '/integration': 'http://localhost:3001'
+    }
   },
   optimizeDeps: {
     include: ['yaml'],

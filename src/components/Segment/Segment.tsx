@@ -91,7 +91,7 @@ const Segment: React.FC<SegmentProps> = ({
                     }
                   }}
                 >
-                  {element.services.map((service, serviceIndex) => (
+                  {element.services.map((service) => (
                     <Box
                       key={service.id}
                       sx={{

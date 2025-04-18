@@ -5,7 +5,7 @@ integration:
   - segment: delta
     elements:
     - type: kafka
-      name: DELTA.TOPIC.EVENT.V1
+      name: DELTA.TOPIC.EVENT.V5
       partitions: 10
       configuration:
         max.message.bytes: 4194304

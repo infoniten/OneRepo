@@ -20,9 +20,12 @@ function App() {
       const loadedIntegrations = await loadIntegrations();
       
       // Проверяем, изменился ли список интеграций
-      const hasChanges = JSON.stringify(loadedIntegrations) !== JSON.stringify(integrations);
+      const currentIntegrationsJson = JSON.stringify(integrations);
+      const loadedIntegrationsJson = JSON.stringify(loadedIntegrations);
+      const hasChanges = currentIntegrationsJson !== loadedIntegrationsJson;
       
       if (hasChanges) {
+        console.log('Detected changes in integrations, updating state...');
         setIntegrations(loadedIntegrations);
         
         // Если нет выбранной интеграции, выбираем первую
@@ -46,6 +49,7 @@ function App() {
         setLoading(false);
       }
     } catch (err) {
+      console.error('Error fetching integrations:', err);
       setError(err instanceof Error ? err.message : 'Ошибка загрузки интеграций');
       setLoading(false);
     }
@@ -53,12 +57,26 @@ function App() {
 
   // Инициализация и настройка интервала обновления
   useEffect(() => {
-    fetchIntegrations();
+    let isSubscribed = true;
+    let timeoutId: NodeJS.Timeout;
 
-    const intervalId = setInterval(fetchIntegrations, 5000);
+    const pollIntegrations = async () => {
+      if (!isSubscribed) return;
+
+      await fetchIntegrations();
+      
+      // Планируем следующий запрос только после завершения текущего
+      timeoutId = setTimeout(pollIntegrations, 5000);
+    };
+
+    // Запускаем первый запрос
+    pollIntegrations();
 
     return () => {
-      clearInterval(intervalId);
+      isSubscribed = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [fetchIntegrations]);
 

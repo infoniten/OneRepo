@@ -1,0 +1,70 @@
+integration:
+  name: Example Integration
+  description: Пример интеграционного потока
+  segments:
+    - segment: delta
+      elements:
+        - id: 1
+          type: kafka
+          name: DELTA.TOPIC.IN
+          connection:
+            url: kafka-broker-1:9092
+            host: kafka-broker-1
+            port: 9092
+          security:
+            principals:
+              - principal: CN=Producer, OU=TEST
+                operations:
+                  - write
+                  - describe
+                group:
+                  - producers
+              - principal: CN=Consumer, OU=TEST
+                operations:
+                  - read
+                  - describe
+                group:
+                  - consumers
+          kafkaConfig:
+            max_message_bytes: 1048576
+            retention_ms: 604800000
+          next: 2
+
+        - id: 2
+          type: k8s
+          name: Processor Service
+          services:
+            - id: 21
+              service: validation-service
+              subType: validator
+              connectionInfo:
+                url: http://validator:8080/api
+                host: validator
+                port: 8080
+            - id: 22
+              service: transformation-service
+              subType: transformer
+              connectionInfo:
+                url: http://transformer:8080/api
+                host: transformer
+                port: 8080
+          next: 3
+
+        - id: 3
+          type: kafka
+          name: DELTA.TOPIC.OUT
+          connection:
+            url: kafka-broker-2:9092
+            host: kafka-broker-2
+            port: 9092
+          security:
+            principals:
+              - principal: CN=Producer, OU=TEST
+                operations:
+                  - write
+                  - describe
+                group:
+                  - producers
+          kafkaConfig:
+            max_message_bytes: 1048576
+            retention_ms: 604800000 

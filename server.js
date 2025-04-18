@@ -13,11 +13,19 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 
+// Добавляем middleware для отключения кэширования для API endpoints
+const noCache = (req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('Expires', '0');
+  res.set('Pragma', 'no-cache');
+  next();
+};
+
 // Serve integration files
-app.use('/integration', express.static(path.join(__dirname, 'integration')));
+app.use('/integration', noCache, express.static(path.join(__dirname, 'integration')));
 
 // Эндпоинт для получения списка интеграций
-app.get('/api/integrations/list', async (req, res) => {
+app.get('/api/integrations/list', noCache, async (req, res) => {
   try {
     const integrationDir = path.join(__dirname, 'integration');
     const directories = await fs.readdir(integrationDir, { withFileTypes: true });
@@ -36,6 +44,7 @@ app.get('/api/integrations/list', async (req, res) => {
       }
     }
 
+    console.log('Sending integration list:', integrationFiles);
     res.json(integrationFiles);
   } catch (err) {
     console.error('Error reading integration directories:', err);
@@ -44,11 +53,12 @@ app.get('/api/integrations/list', async (req, res) => {
 });
 
 // Эндпоинт для получения конкретной интеграции
-app.get('/integration/:dir/integration.yaml', async (req, res) => {
+app.get('/integration/:dir/integration.yaml', noCache, async (req, res) => {
   const filePath = path.join(__dirname, 'integration', req.params.dir, 'integration.yaml');
   
   try {
     const data = await fs.readFile(filePath, 'utf8');
+    console.log(`Serving integration file: ${req.params.dir}/integration.yaml`);
     res.type('text/yaml').send(data);
   } catch (err) {
     console.error('Error reading integration file:', err);

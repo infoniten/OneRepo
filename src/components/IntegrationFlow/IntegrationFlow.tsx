@@ -372,10 +372,48 @@ const K8sNode = ({ data, isConnectable, selected }: NodeProps<K8sNodeData>) => {
 const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: direction });
+  
+  // Уменьшаем отступы между узлами вдвое
+  dagreGraph.setGraph({ 
+    rankdir: direction,
+    nodesep: 100,  // Было 200
+    ranksep: 125,  // Было 250
+    edgesep: 40,   // Было 80
+    marginx: 25,   // Было 50
+    marginy: 25    // Было 50
+  });
 
   nodes.forEach((node: Node) => {
-    dagreGraph.setNode(node.id, { width: node.type === 'k8s' ? 300 : 180, height: node.type === 'k8s' ? 200 : 80 });
+    // Оптимизируем размеры узлов в зависимости от типа
+    const nodeConfig = (() => {
+      switch (node.type) {
+        case 'k8s':
+          return {
+            width: 350,    // Было 400
+            height: 250    // Было 300
+          };
+        case 'custom':
+          // Для Kafka топиков делаем узлы пошире
+          if (node.data?.type?.toLowerCase() === 'kafka') {
+            return {
+              width: 240,  // Было 280
+              height: 90   // Было 100
+            };
+          }
+          // Для остальных типов (nginx, geo-load-balancer и т.д.)
+          return {
+            width: 180,    // Было 220
+            height: 90     // Было 100
+          };
+        default:
+          return {
+            width: 180,    // Было 220
+            height: 90     // Было 100
+          };
+      }
+    })();
+
+    dagreGraph.setNode(node.id, nodeConfig);
   });
 
   edges.forEach((edge) => {
@@ -386,11 +424,14 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
 
   const layoutedNodes = nodes.map((node: Node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
+    const width = nodeWithPosition.width;
+    const height = nodeWithPosition.height;
+
     return {
       ...node,
       position: {
-        x: nodeWithPosition.x - (node.type === 'k8s' ? 150 : 90),
-        y: nodeWithPosition.y - (node.type === 'k8s' ? 100 : 40),
+        x: nodeWithPosition.x - width / 2,   // Центрируем узел
+        y: nodeWithPosition.y - height / 2    // Центрируем узел
       },
     };
   });

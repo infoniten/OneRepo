@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, CssBaseline, CircularProgress, Typography } from '@mui/material';
+import { Box, CssBaseline, CircularProgress, Typography, IconButton, Tooltip } from '@mui/material';
+import ChatIcon from '@mui/icons-material/Chat';
+import CloseIcon from '@mui/icons-material/Close';
 import IntegrationList from './components/IntegrationList/IntegrationList';
 import IntegrationFlow from './components/IntegrationFlow/IntegrationFlow';
 import { ElementDetailsModal } from './components/ElementDetailsModal/ElementDetailsModal';
+import { ChatInterface } from './components/ChatInterface/ChatInterface';
 import { Integration, Element, Service } from './types/integration';
 import { loadIntegrations } from './utils/integrationLoader';
 
@@ -13,6 +16,7 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Функция для загрузки списка интеграций
   const fetchIntegrations = useCallback(async () => {
@@ -136,15 +140,95 @@ function App() {
       </Box>
 
       {/* Основной контент */}
-      <Box sx={{ flexGrow: 1, height: '100%', position: 'relative' }}>
-        {selectedIntegration && (
-          <IntegrationFlow
-            key={selectedIntegration.name}
-            integration={selectedIntegration}
-            selectedElementId={selectedElement?.id || null}
-            onElementClick={handleElementClick}
-          />
-        )}
+      <Box sx={{ flexGrow: 1, height: '100%', position: 'relative', display: 'flex' }}>
+        <Box sx={{ flexGrow: 1, height: '100%' }}>
+          {selectedIntegration && (
+            <IntegrationFlow
+              key={selectedIntegration.name}
+              integration={selectedIntegration}
+              selectedElementId={selectedElement?.id || null}
+              onElementClick={handleElementClick}
+            />
+          )}
+        </Box>
+        
+        {/* Кнопка открытия чата */}
+        <Box
+          sx={{
+            position: 'fixed',
+            right: isChatOpen ? 400 : 20,
+            bottom: 20,
+            transition: 'right 0.3s ease',
+            zIndex: 1000,
+          }}
+        >
+          <Tooltip title={isChatOpen ? "Закрыть чат" : "Открыть чат"}>
+            <IconButton
+              onClick={() => setIsChatOpen(!isChatOpen)}
+              sx={{
+                bgcolor: '#2e7d32',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: '#1b5e20',
+                  transform: 'scale(1.05)',
+                },
+                minWidth: isChatOpen ? '56px' : '200px',
+                height: 56,
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 8px rgba(46, 125, 50, 0.3)',
+                borderRadius: '28px',
+                display: 'flex',
+                gap: '8px',
+                padding: isChatOpen ? '16px' : '16px 24px',
+                justifyContent: 'center',
+                alignItems: 'center',
+                textTransform: 'none',
+                fontSize: '16px',
+                fontWeight: 500,
+              }}
+            >
+              {isChatOpen ? (
+                <CloseIcon />
+              ) : (
+                <>
+                  <ChatIcon fontSize="large" />
+                  <Typography
+                    variant="button"
+                    sx={{
+                      fontSize: '16px',
+                      fontWeight: 500,
+                      textTransform: 'none',
+                      ml: 1,
+                    }}
+                  >
+                    Чат с GigaChat
+                  </Typography>
+                </>
+              )}
+            </IconButton>
+          </Tooltip>
+        </Box>
+        
+        {/* Правая панель с чатом */}
+        <Box
+          sx={{
+            position: 'fixed',
+            right: 0,
+            top: 0,
+            width: 400,
+            height: '100%',
+            bgcolor: 'background.paper',
+            borderLeft: '1px solid #e0e0e0',
+            transform: isChatOpen ? 'translateX(0)' : 'translateX(100%)',
+            transition: 'transform 0.3s ease',
+            zIndex: 999,
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: isChatOpen ? '-4px 0 8px rgba(0,0,0,0.1)' : 'none',
+          }}
+        >
+          <ChatInterface llmEndpoint="/api/llm" />
+        </Box>
       </Box>
 
       {/* Модальное окно с деталями */}

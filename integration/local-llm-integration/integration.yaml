@@ -1,0 +1,58 @@
+integration:
+  name: Local LLM Integration
+  description: Интеграция с локальной нейросетью через LM Studio
+  segments:
+    - segment: delta
+      elements:
+        - id: 1
+          type: input
+          name: Text Input
+          description: Ввод текста для обработки
+          next: 2
+
+        - id: 2
+          type: k8s
+          name: Text Processor
+          services:
+            - id: 21
+              service: input-validator
+              type: service
+              description: Валидация входного текста
+            - id: 22
+              service: text-preprocessor
+              type: service
+              description: Предобработка текста
+          next: 3
+
+    - segment: omega
+      elements:
+        - id: 3
+          type: llm-service
+          name: LM Studio Service
+          description: Локальная нейросеть
+          connectionInfo:
+            host: 127.0.0.1
+            port: 1234
+            url: http://127.0.0.1:1234
+          next: 4
+
+    - segment: alpha
+      elements:
+        - id: 4
+          type: k8s
+          name: Response Handler
+          services:
+            - id: 41
+              service: response-formatter
+              type: service
+              description: Форматирование ответа
+            - id: 42
+              service: output-validator
+              type: service
+              description: Валидация ответа
+          next: 5
+
+        - id: 5
+          type: output
+          name: Text Output
+          description: Вывод обработанного текста 

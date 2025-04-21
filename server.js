@@ -3,6 +3,7 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
+import { handleLLMRequest } from './dist-server/server/llmHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,6 +13,7 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
+app.use(express.json());
 
 // Добавляем middleware для отключения кэширования для API endpoints
 const noCache = (req, res, next) => {
@@ -72,6 +74,16 @@ app.use(express.static(path.join(__dirname, 'dist')));
 // Handle React routing, return all requests to React app
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+app.post('/api/llm', async (req, res) => {
+  try {
+    const response = await handleLLMRequest({ question: req.body.prompt });
+    res.json({ response });
+  } catch (error) {
+    console.error('Error processing LLM request:', error);
+    res.status(500).json({ error: 'Failed to process request' });
+  }
 });
 
 app.listen(PORT, () => {

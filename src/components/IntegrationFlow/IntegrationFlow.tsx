@@ -213,8 +213,20 @@ const ServiceArrow = () => (
 
 const getNodeColor = (type: string): string => {
   switch (type.toLowerCase()) {
+    case 'kafka':
+      return '#4CAF50';
     case 'k8s':
       return '#2196F3';
+    case 'nginx':
+      return '#FF9800';
+    case 'geo-load-balancer':
+      return '#9C27B0';
+    case 'input':
+      return '#00BCD4';  // Голубой для input
+    case 'output':
+      return '#009688';  // Бирюзовый для output
+    case 'llm-service':
+      return '#E91E63';  // Розовый для LLM сервиса
     default:
       return '#607D8B';
   }
@@ -368,6 +380,179 @@ const K8sNode = ({ data, isConnectable, selected }: NodeProps<K8sNodeData>) => {
   );
 };
 
+// Добавляем новые компоненты для input и output
+const InputNode = ({ data, isConnectable }: NodeProps) => {
+  const color = useMemo(() => getNodeColor('input'), []);
+  
+  return (
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+      style={{
+        padding: '12px',
+        borderRadius: '12px',
+        border: `2px solid ${color}`,
+        background: 'white',
+        minWidth: '180px',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+      }}
+    >
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        isConnectable={isConnectable}
+        style={{ background: color }}
+      />
+      <div>
+        <Typography
+          variant="subtitle2"
+          sx={{
+            fontWeight: 600,
+            color: color,
+            fontSize: '1.1rem',
+            mb: 0.5,
+          }}
+        >
+          {data.label}
+        </Typography>
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary',
+            display: 'block',
+            fontSize: '0.875rem',
+          }}
+        >
+          {data.type}
+        </Typography>
+      </div>
+    </motion.div>
+  );
+};
+
+const OutputNode = ({ data, isConnectable }: NodeProps) => {
+  const color = useMemo(() => getNodeColor('output'), []);
+  
+  return (
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+      style={{
+        padding: '12px',
+        borderRadius: '12px',
+        border: `2px solid ${color}`,
+        background: 'white',
+        minWidth: '180px',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+      }}
+    >
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        isConnectable={isConnectable}
+        style={{ background: color }}
+      />
+      <div>
+        <Typography
+          variant="subtitle2"
+          sx={{
+            fontWeight: 600,
+            color: color,
+            fontSize: '1.1rem',
+            mb: 0.5,
+          }}
+        >
+          {data.label}
+        </Typography>
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary',
+            display: 'block',
+            fontSize: '0.875rem',
+          }}
+        >
+          {data.type}
+        </Typography>
+      </div>
+    </motion.div>
+  );
+};
+
+const LLMServiceNode = ({ data, isConnectable }: NodeProps) => {
+  const color = useMemo(() => getNodeColor('llm-service'), []);
+  
+  return (
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+      style={{
+        padding: '15px',
+        borderRadius: '12px',
+        border: `2px solid ${color}`,
+        background: 'white',
+        minWidth: '220px',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+      }}
+    >
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        isConnectable={isConnectable}
+        style={{ background: color }}
+      />
+      <div>
+        <Typography
+          variant="subtitle2"
+          sx={{
+            fontWeight: 600,
+            color: color,
+            fontSize: '1.1rem',
+            mb: 0.5,
+          }}
+        >
+          {data.label}
+        </Typography>
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary',
+            display: 'block',
+            fontSize: '0.875rem',
+            mb: 1,
+          }}
+        >
+          {data.type}
+        </Typography>
+        {data.connectionInfo && (
+          <Box
+            sx={{
+              mt: 1,
+              p: 1,
+              bgcolor: 'rgba(233, 30, 99, 0.05)',
+              borderRadius: 1,
+              fontSize: '0.75rem',
+            }}
+          >
+            <Typography variant="caption" sx={{ color: color }}>
+              URL: {data.connectionInfo.url}
+            </Typography>
+          </Box>
+        )}
+      </div>
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        isConnectable={isConnectable}
+        style={{ background: color }}
+      />
+    </motion.div>
+  );
+};
+
 // Функция для автоматического расположения элементов
 const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
   const dagreGraph = new dagre.graphlib.Graph();
@@ -447,6 +632,9 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
   const nodeTypes = useMemo(() => ({
     custom: CustomNode,
     k8s: K8sNode,
+    input: InputNode,
+    output: OutputNode,
+    'llm-service': LLMServiceNode,
   }), []);
 
   const NetworkSegments = useCallback(({ segments, segmentGroups }: { 

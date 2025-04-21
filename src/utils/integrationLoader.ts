@@ -1,5 +1,5 @@
 import { Integration } from '../types/integration';
-import YAML from 'yaml';
+import yaml from 'js-yaml';
 
 export function getIntegrationNameFromPath(path: string): string {
   const match = path.match(/([^/]+)\/integration\.yaml$/);
@@ -15,82 +15,41 @@ export function normalizeSegmentName(name: string): string {
   return segmentMap[name.toLowerCase()] || name;
 }
 
-// Функция для получения списка доступных интеграций
-async function getAvailableIntegrations(): Promise<string[]> {
-  try {
-    console.log('Fetching integration list...');
-    const response = await fetch('/api/integrations/list');
-    if (!response.ok) {
-      throw new Error(`Failed to fetch integration list: ${response.statusText}`);
-    }
-    const paths = await response.json();
-    console.log('Received integration paths:', paths);
-    return paths;
-  } catch (error) {
-    console.error('Error fetching integration list:', error);
-    return [];
-  }
+interface IntegrationFile {
+  stand: string;
+  flow: string;
+  path: string;
 }
 
-// Функция для загрузки конкретной интеграции
-async function loadIntegration(path: string): Promise<Integration | null> {
-  try {
-    console.log(`Loading integration from path: ${path}`);
-    const response = await fetch(path);
-    if (!response.ok) {
-      console.warn(`Failed to load integration file ${path}: ${response.statusText}`);
-      return null;
-    }
-    
-    const yamlText = await response.text();
-    console.log(`Received YAML content for ${path}:`, yamlText.substring(0, 100) + '...');
-    
-    const parsed = YAML.parse(yamlText);
-    console.log(`Parsed YAML for ${path}:`, parsed);
-    
-    if (!parsed || !parsed.integration || !parsed.integration.segments) {
-      console.warn(`Invalid or empty integration file: ${path}`);
-      return null;
-    }
-    
-    const integrationName = getIntegrationNameFromPath(path);
-    console.log('Parsed integration name:', integrationName);
-    
-    const result = {
-      name: integrationName,
-      description: parsed.integration.description || '',
-      segments: parsed.integration.segments.map((segment: any) => ({
-        segment: normalizeSegmentName(segment.segment),
-        elements: segment.elements || []
-      }))
-    };
-    
-    console.log(`Successfully loaded integration ${integrationName}:`, result);
-    return result;
-  } catch (error) {
-    console.error(`Error processing integration file ${path}:`, error);
-    return null;
-  }
-}
-
-// Основная функция загрузки интеграций с поддержкой поллинга
 export async function loadIntegrations(): Promise<Integration[]> {
   try {
-    const paths = await getAvailableIntegrations();
-    const integrations: Integration[] = [];
-    
-    for (const path of paths) {
-      const integration = await loadIntegration(path);
-      if (integration) {
-        integrations.push(integration);
-      }
-    }
-    
-    if (integrations.length === 0) {
-      console.warn('No integration files found or processed successfully');
-    }
-    
-    return integrations;
+    // Получаем список файлов интеграций
+    const response = await fetch('/api/integrations/list');
+    const files = await response.json() as IntegrationFile[];
+
+    // Загружаем каждую интеграцию
+    const integrations = await Promise.all(
+      files.map(async (file) => {
+        try {
+          const response = await fetch(file.path);
+          const yamlContent = await response.text();
+          const parsed = yaml.load(yamlContent) as { integration: Integration };
+          
+          // Добавляем информацию о стенде и потоке
+          return {
+            ...parsed.integration,
+            stand: file.stand,
+            flowName: file.flow
+          };
+        } catch (error) {
+          console.error(`Error loading integration from ${file.path}:`, error);
+          return null;
+        }
+      })
+    );
+
+    // Фильтруем null значения (неудачные загрузки)
+    return integrations.filter((integration): integration is Integration => integration !== null);
   } catch (error) {
     console.error('Error loading integrations:', error);
     return [];

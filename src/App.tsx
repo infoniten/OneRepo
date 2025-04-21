@@ -98,11 +98,14 @@ function App() {
         if (el.id === elementId) {
           element = el;
         }
-        el.services?.forEach(service => {
-          if (service.id === elementId) {
-            element = service;
-          }
-        });
+        // Проверяем, является ли элемент типом Element и имеет ли services
+        if ('services' in el && el.services) {
+          el.services.forEach((service: Service) => {
+            if (service.id === elementId) {
+              element = service;
+            }
+          });
+        }
       });
     });
 
@@ -227,7 +230,7 @@ function App() {
             boxShadow: isChatOpen ? '-4px 0 8px rgba(0,0,0,0.1)' : 'none',
           }}
         >
-          <ChatInterface llmEndpoint="/api/llm" />
+          <ChatInterface />
         </Box>
       </Box>
 

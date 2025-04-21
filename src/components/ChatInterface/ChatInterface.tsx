@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Box, TextField, IconButton, Paper, Typography, CircularProgress } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import { motion, AnimatePresence } from 'framer-motion';
+import { StandSelector } from '../StandSelector/StandSelector';
 
 interface Message {
   text: string;
@@ -9,14 +10,11 @@ interface Message {
   timestamp: Date;
 }
 
-interface ChatInterfaceProps {
-  llmEndpoint: string;
-}
-
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ llmEndpoint }) => {
+export const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState('');
+  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedStand, setSelectedStand] = useState('IFT');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -27,27 +25,28 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ llmEndpoint }) => 
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!inputValue.trim()) return;
+  const handleSendMessage = async () => {
+    if (!input.trim()) return;
 
     const userMessage: Message = {
-      text: inputValue,
+      text: input,
       isUser: true,
       timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
+    setInput('');
     setIsLoading(true);
 
     try {
-      const response = await fetch(llmEndpoint, {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: inputValue,
+          question: input,
+          stand: selectedStand,
         }),
       });
 
@@ -61,9 +60,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ llmEndpoint }) => 
 
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
-      console.error('Error calling LLM:', error);
+      console.error('Error sending message:', error);
       const errorMessage: Message = {
-        text: 'Извините, произошла ошибка при обработке запроса',
+        text: 'Произошла ошибка при отправке сообщения. Пожалуйста, попробуйте еще раз.',
         isUser: false,
         timestamp: new Date(),
       };
@@ -76,37 +75,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ llmEndpoint }) => 
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      handleSend();
+      handleSendMessage();
     }
   };
 
   return (
-    <Paper
-      elevation={3}
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        bgcolor: 'background.paper',
-        borderRadius: 2,
-        overflow: 'hidden',
-      }}
-    >
-      <Box
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <StandSelector onStandChange={setSelectedStand} />
+      <Paper
+        elevation={3}
         sx={{
-          p: 2,
-          borderBottom: 1,
-          borderColor: 'divider',
-          bgcolor: '#2e7d32',
-          color: 'white',
-        }}
-      >
-        <Typography variant="h6">Чат с GigaChat</Typography>
-      </Box>
-
-      <Box
-        sx={{
-          flex: 1,
+          flexGrow: 1,
           overflow: 'auto',
           p: 2,
           display: 'flex',
@@ -156,7 +135,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ llmEndpoint }) => 
           ))}
         </AnimatePresence>
         <div ref={messagesEndRef} />
-      </Box>
+      </Paper>
 
       <Box
         sx={{
@@ -171,8 +150,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ llmEndpoint }) => 
           fullWidth
           multiline
           maxRows={4}
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Задайте вопрос о интеграциях..."
           disabled={isLoading}
@@ -186,8 +165,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ llmEndpoint }) => 
           }}
         />
         <IconButton
-          onClick={handleSend}
-          disabled={isLoading || !inputValue.trim()}
+          onClick={handleSendMessage}
+          disabled={isLoading || !input.trim()}
           sx={{
             alignSelf: 'flex-end',
             p: 1,
@@ -200,6 +179,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ llmEndpoint }) => 
           {isLoading ? <CircularProgress size={24} sx={{ color: '#2e7d32' }} /> : <SendIcon />}
         </IconButton>
       </Box>
-    </Paper>
+    </Box>
   );
 }; 

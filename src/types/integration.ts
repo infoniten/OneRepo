@@ -28,12 +28,15 @@ export interface KafkaConfig {
 export interface Service {
   id: number;
   service: string;
+  type?: string;
   subType?: string;
   configs?: Record<string, string>;
   dnName?: string;
   connectionInfo: ConnectionInfo;
-  destinationInfo: DestinationInfo;
-  next: number;
+  destinationInfo?: DestinationInfo;
+  next?: number;
+  selected?: boolean;
+  label?: string;
 }
 
 export interface Connection {
@@ -51,6 +54,7 @@ export interface Element {
   name?: string;
   type: string;
   connection?: ConnectionInfo;
+  connectionInfo?: ConnectionInfo;
   security?: Security;
   kafkaConfig?: KafkaConfig;
   services?: Service[];
@@ -59,13 +63,18 @@ export interface Element {
 
 export interface Segment {
   segment: string;
-  elements: Element[];
+  elements: Array<Element>;
 }
 
 export interface Integration {
   name: string;
-  description: string;
-  segments: Segment[];
+  description?: string;
+  stand: string;
+  flowName: string;
+  segments: Array<{
+    segment: string;
+    elements: Array<Element>;
+  }>;
 }
 
 export interface IntegrationFlow {

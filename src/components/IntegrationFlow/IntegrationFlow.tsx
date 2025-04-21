@@ -22,7 +22,7 @@ import { Box, Paper, Typography, IconButton, Tooltip } from '@mui/material';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import CenterFocusStrongIcon from '@mui/icons-material/CenterFocusStrong';
-import { Element, Integration } from '../../types/integration';
+import { Integration, Element, Service } from '../../types/integration';
 import 'reactflow/dist/style.css';
 
 interface IntegrationFlowProps {
@@ -35,17 +35,14 @@ interface K8sNodeData {
   id: string;
   label: string;
   type: string;
-  services: Array<{
-    id: string;
-    label: string;
-    type: string;
-    selected: boolean;
-  }>;
-  onServiceClick: (id: string) => void;
+  services: Service[];
+  onServiceClick: (id: number | string) => void;
+  selected?: boolean;
+  selectedElementId?: string | number | null;
 }
 
 // Кастомная нода для обычного элемента
-const CustomNode = ({ data, isConnectable, selected }: NodeProps) => {
+const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) => {
   const getNodeColor = (type: string): string => {
     switch (type.toLowerCase()) {
       case 'kafka':
@@ -60,6 +57,8 @@ const CustomNode = ({ data, isConnectable, selected }: NodeProps) => {
         return '#607D8B';
     }
   };
+
+  const isSelected = flowSelected || data.selected;
 
   return (
     <motion.div
@@ -76,13 +75,13 @@ const CustomNode = ({ data, isConnectable, selected }: NodeProps) => {
         padding: '12px',
         borderRadius: '12px',
         border: `2px solid ${getNodeColor(data.type)}`,
-        background: selected ? '#f8f9fa' : 'white',
+        background: isSelected ? '#f8f9fa' : 'white',
         minWidth: '200px',
-        boxShadow: selected 
+        boxShadow: isSelected 
           ? `0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px ${getNodeColor(data.type)}22` 
           : '0 4px 8px rgba(0,0,0,0.05)',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        transform: selected ? 'translateY(-2px)' : 'none',
+        transform: isSelected ? 'translateY(-2px)' : 'none',
       }}
     >
       <Handle 
@@ -264,37 +263,60 @@ const nodeStyles = {
   }
 };
 
-const K8sNode = ({ data, isConnectable, selected }: NodeProps<K8sNodeData>) => {
-  const color = useMemo(() => getNodeColor('k8s'), []);
-  
+const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sNodeData>) => {
+  const getNodeColor = (type: string): string => {
+    switch (type.toLowerCase()) {
+      case 'kafka':
+        return '#4CAF50';
+      case 'k8s':
+        return '#2196F3';
+      case 'nginx':
+        return '#FF9800';
+      case 'geo-load-balancer':
+        return '#9C27B0';
+      default:
+        return '#607D8B';
+    }
+  };
+
+  const isSelected = flowSelected || data.selected;
+
   return (
     <motion.div
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.8, opacity: 0 }}
       transition={{ 
         type: "spring",
         stiffness: 260,
-        damping: 20 
+        damping: 20,
+        duration: 0.3 
       }}
       style={{
-        ...nodeStyles.container,
-        border: `2px solid ${color}`,
-        background: selected ? '#f8f9fa' : 'white',
-        boxShadow: selected ? '0 4px 12px rgba(0,0,0,0.1)' : '0 2px 6px rgba(0,0,0,0.05)',
+        padding: '16px',
+        borderRadius: '12px',
+        border: '2px solid #2196F3',
+        background: isSelected ? '#f8f9fa' : 'white',
+        minWidth: '250px',
+        boxShadow: isSelected 
+          ? '0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px rgba(33,150,243,0.2)' 
+          : '0 4px 8px rgba(0,0,0,0.05)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transform: isSelected ? 'translateY(-2px)' : 'none',
       }}
     >
       <Handle 
         type="target" 
         position={Position.Left} 
         isConnectable={isConnectable}
-        style={{ background: color }}
+        style={{ background: getNodeColor('k8s') }}
       />
       <div>
         <Typography
           variant="subtitle2"
           sx={{
             ...nodeStyles.title,
-            color
+            color: getNodeColor('k8s')
           }}
         >
           {data.label}
@@ -332,8 +354,8 @@ const K8sNode = ({ data, isConnectable, selected }: NodeProps<K8sNodeData>) => {
               <Box
                 sx={{
                   ...nodeStyles.serviceItem,
-                  border: `1px solid ${color}`,
-                  backgroundColor: service.selected ? '#e3f2fd' : 'white',
+                  border: `1px solid ${getNodeColor('k8s')}`,
+                  backgroundColor: service.id.toString() === data.selectedElementId?.toString() ? '#e3f2fd' : 'white',
                   cursor: 'pointer',
                   '&:hover': {
                     backgroundColor: '#e3f2fd',
@@ -347,11 +369,11 @@ const K8sNode = ({ data, isConnectable, selected }: NodeProps<K8sNodeData>) => {
                   variant="subtitle2"
                   sx={{
                     fontWeight: 'bold',
-                    color: color,
+                    color: getNodeColor('k8s'),
                     fontSize: '0.875rem',
                   }}
                 >
-                  {service.label}
+                  {service.service}
                 </Typography>
                 <Typography
                   variant="caption"
@@ -361,7 +383,7 @@ const K8sNode = ({ data, isConnectable, selected }: NodeProps<K8sNodeData>) => {
                     fontSize: '0.75rem',
                   }}
                 >
-                  {service.type}
+                  {service.subType || 'service'}
                 </Typography>
               </Box>
               {index < data.services.length - 1 && <ServiceArrow />}
@@ -374,7 +396,7 @@ const K8sNode = ({ data, isConnectable, selected }: NodeProps<K8sNodeData>) => {
         type="source" 
         position={Position.Right} 
         isConnectable={isConnectable}
-        style={{ background: color }}
+        style={{ background: getNodeColor('k8s') }}
       />
     </motion.div>
   );
@@ -717,40 +739,24 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
       const segmentNodes: Node[] = [];
       
       segment.elements.forEach((element: Element) => {
-        const elementNodeId = String(element.id);
-        
-        if (element.type === 'k8s' && element.services) {
-          const node = {
-            id: elementNodeId,
-            type: 'k8s',
-            data: {
-              label: element.name || element.type,
-              type: element.type,
-              services: element.services.map(service => ({
-                id: service.id,
-                label: service.service,
-                type: service.service,
-                selected: selectedElementId === service.id
-              })),
-              onServiceClick: onElementClick
-            },
-            position: { x: 0, y: 0 },
-          };
-          nodes.push(node);
-          segmentNodes.push(node);
-        } else {
-          const node = {
-            id: elementNodeId,
-            type: 'custom',
-            data: {
-              label: element.name || element.type,
-              type: element.type,
-            },
-            position: { x: 0, y: 0 },
-          };
-          nodes.push(node);
-          segmentNodes.push(node);
-        }
+        if (!element.type) return; // Пропускаем элементы без типа
+
+        const elementNode = {
+          id: element.id.toString(),
+          type: element.type.toLowerCase() === 'k8s' ? 'k8s' : 'custom',
+          position: { x: 0, y: 0 },
+          data: { 
+            label: element.name || element.type,
+            type: element.type,
+            element: element,
+            services: element.services,
+            onServiceClick: onElementClick,
+            selected: element.id.toString() === selectedElementId?.toString(),
+            selectedElementId,
+          },
+        };
+        nodes.push(elementNode);
+        segmentNodes.push(elementNode);
 
         if (element.next) {
           edges.push({
@@ -776,7 +782,7 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
       initialEdges: edges,
       segmentGroups: segments,
     };
-  }, [integration, selectedElementId]);
+  }, [integration, selectedElementId, onElementClick]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);

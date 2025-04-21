@@ -13,6 +13,9 @@ import {
   Paper,
   IconButton,
   Tooltip,
+  Select,
+  MenuItem,
+  FormControl,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -26,6 +29,11 @@ interface IntegrationListProps {
   onSelectIntegration: (integration: Integration) => void;
 }
 
+interface IntegrationWithStand extends Integration {
+  stand: string;
+  flowName: string;
+}
+
 const IntegrationList: React.FC<IntegrationListProps> = ({
   integrations,
   selectedIntegration,
@@ -34,6 +42,18 @@ const IntegrationList: React.FC<IntegrationListProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSegments, setSelectedSegments] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(true);
+  const [selectedStand, setSelectedStand] = useState<string>('IFT');
+
+  // Получаем уникальные стенды из всех интеграций и сортируем их в нужном порядке
+  const stands = useMemo(() => {
+    const standsSet = new Set<string>();
+    (integrations as IntegrationWithStand[]).forEach(integration => {
+      standsSet.add(integration.stand);
+    });
+    const standsArray = Array.from(standsSet);
+    const standOrder: Record<string, number> = { 'IFT': 0, 'UAT': 1, 'NT': 2, 'PROM': 3 };
+    return standsArray.sort((a, b) => (standOrder[a] ?? 999) - (standOrder[b] ?? 999));
+  }, [integrations]);
 
   // Получаем уникальные сегменты из всех интеграций
   const availableSegments = useMemo(() => {
@@ -46,9 +66,11 @@ const IntegrationList: React.FC<IntegrationListProps> = ({
     return Array.from(segments);
   }, [integrations]);
 
-  // Фильтруем интеграции по поисковому запросу и выбранным сегментам
+  // Фильтруем интеграции по стенду, поисковому запросу и выбранным сегментам
   const filteredIntegrations = useMemo(() => {
-    return integrations.filter(integration => {
+    return (integrations as IntegrationWithStand[]).filter(integration => {
+      const matchesStand = integration.stand === selectedStand;
+
       const matchesSearch = 
         !searchQuery || 
         integration.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -63,9 +85,9 @@ const IntegrationList: React.FC<IntegrationListProps> = ({
           selectedSegments.includes(segment.segment.toLowerCase())
         );
 
-      return matchesSearch && matchesSegments;
+      return matchesStand && matchesSearch && matchesSegments;
     });
-  }, [integrations, searchQuery, selectedSegments]);
+  }, [integrations, selectedStand, searchQuery, selectedSegments]);
 
   const handleSegmentToggle = (segment: string) => {
     setSelectedSegments(prev => 
@@ -115,6 +137,59 @@ const IntegrationList: React.FC<IntegrationListProps> = ({
             </IconButton>
           </Tooltip>
         </Box>
+
+        <FormControl 
+          fullWidth 
+          sx={{ 
+            mb: 2,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              bgcolor: 'background.paper',
+              '&:hover': {
+                bgcolor: 'action.hover',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                },
+              },
+              '&.Mui-focused': {
+                bgcolor: 'background.paper',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                  borderWidth: 2,
+                },
+              },
+            },
+          }}
+        >
+          <Select
+            value={selectedStand}
+            onChange={(e) => setSelectedStand(e.target.value)}
+            displayEmpty
+            sx={{
+              '& .MuiSelect-select': {
+                py: 1.5,
+              },
+            }}
+          >
+            {stands.map((stand) => (
+              <MenuItem 
+                key={stand} 
+                value={stand}
+                sx={{
+                  py: 1.5,
+                  '&.Mui-selected': {
+                    bgcolor: 'primary.light',
+                    '&:hover': {
+                      bgcolor: 'primary.light',
+                    },
+                  },
+                }}
+              >
+                {stand}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
         
         <TextField
           fullWidth

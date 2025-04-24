@@ -39,6 +39,7 @@ interface K8sNodeData {
   onServiceClick: (id: number | string) => void;
   selected?: boolean;
   selectedElementId?: string | number | null;
+  element?: Element;
 }
 
 // Кастомная нода для обычного элемента
@@ -82,6 +83,7 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
           : '0 4px 8px rgba(0,0,0,0.05)',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         transform: isSelected ? 'translateY(-2px)' : 'none',
+        position: 'relative',
       }}
     >
       <Handle 
@@ -93,7 +95,12 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
           width: '12px',
           height: '12px',
           border: '2px solid white',
-          boxShadow: '0 0 0 2px ' + getNodeColor(data.type)
+          top: '50%',
+          transform: 'translateY(-50%)',
+          left: '-7px',
+          boxShadow: `0 0 0 2px ${getNodeColor(data.type)}`,
+          transition: 'all 0.2s ease',
+          opacity: 0.8
         }}
       />
       <div>
@@ -132,83 +139,17 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
           width: '12px',
           height: '12px',
           border: '2px solid white',
-          boxShadow: '0 0 0 2px ' + getNodeColor(data.type)
+          top: '50%',
+          transform: 'translateY(-50%)',
+          right: '-7px',
+          boxShadow: `0 0 0 2px ${getNodeColor(data.type)}`,
+          transition: 'all 0.2s ease',
+          opacity: 0.8
         }}
       />
     </motion.div>
   );
 };
-
-// Компонент горизонтальной стрелки
-const HorizontalArrow = ({ direction }: { direction: 'left' | 'right' }) => (
-  <Box
-    sx={{
-      position: 'absolute',
-      top: '50%',
-      ...(direction === 'left' ? { left: '-24px' } : { right: '-24px' }),
-      transform: 'translateY(-50%)',
-      width: '24px',
-      height: '12px',
-      display: 'flex',
-      alignItems: 'center',
-      color: '#2196F3',
-      '&::after': {
-        content: '""',
-        position: 'absolute',
-        height: '2px',
-        width: '24px',
-        backgroundColor: '#2196F3',
-      },
-      '&::before': {
-        content: '""',
-        position: 'absolute',
-        ...(direction === 'left' ? { right: 0 } : { right: 0 }),
-        width: '8px',
-        height: '8px',
-        borderRight: '2px solid #2196F3',
-        borderBottom: '2px solid #2196F3',
-        transform: direction === 'left' 
-          ? 'rotate(-45deg) translate(-3px, -3px)'
-          : 'rotate(-45deg) translate(-3px, -3px)',
-      }
-    }}
-  />
-);
-
-// Компонент вертикальной стрелки
-const ServiceArrow = () => (
-  <Box
-    sx={{
-      position: 'absolute',
-      left: '50%',
-      bottom: '-12px',
-      transform: 'translateX(-50%)',
-      width: '12px',
-      height: '24px',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      color: '#2196F3',
-      '&::after': {
-        content: '""',
-        position: 'absolute',
-        width: '2px',
-        height: '24px',
-        backgroundColor: '#2196F3',
-      },
-      '&::before': {
-        content: '""',
-        position: 'absolute',
-        bottom: 0,
-        width: '8px',
-        height: '8px',
-        borderRight: '2px solid #2196F3',
-        borderBottom: '2px solid #2196F3',
-        transform: 'rotate(45deg) translate(-2px, -2px)',
-      }
-    }}
-  />
-);
 
 const getNodeColor = (type: string): string => {
   switch (type.toLowerCase()) {
@@ -263,6 +204,80 @@ const nodeStyles = {
   }
 };
 
+// Компонент для отображения сервиса внутри k8s блока
+const ServiceNode = ({ data }: NodeProps) => {
+  return (
+    <Box
+      sx={{
+        padding: '8px 12px',
+        borderRadius: '8px',
+        border: '1px solid #2196F3',
+        backgroundColor: data.selected ? '#e3f2fd' : 'white',
+        minWidth: '150px',
+        cursor: 'pointer',
+        position: 'relative',
+        '&:hover': {
+          backgroundColor: '#e3f2fd',
+          boxShadow: '0 4px 8px rgba(33, 150, 243, 0.15)',
+        },
+        transition: 'all 0.2s ease',
+      }}
+      onClick={data.onClick}
+    >
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{
+          background: '#2196F3',
+          width: '10px',
+          height: '10px',
+          border: '2px solid white',
+          top: 0,
+          transform: 'translateY(-50%)',
+          boxShadow: '0 0 0 2px #2196F3',
+          opacity: 0.8,
+          zIndex: 1,
+        }}
+      />
+      <Typography
+        variant="subtitle2"
+        sx={{
+          fontWeight: 'bold',
+          color: '#2196F3',
+          fontSize: '0.875rem',
+        }}
+      >
+        {data.label}
+      </Typography>
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'text.secondary',
+          display: 'block',
+          fontSize: '0.75rem',
+        }}
+      >
+        {data.subType || 'service'}
+      </Typography>
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{
+          background: '#2196F3',
+          width: '10px',
+          height: '10px',
+          border: '2px solid white',
+          bottom: 0,
+          transform: 'translateY(50%)',
+          boxShadow: '0 0 0 2px #2196F3',
+          opacity: 0.8,
+          zIndex: 1,
+        }}
+      />
+    </Box>
+  );
+};
+
 const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sNodeData>) => {
   const getNodeColor = (type: string): string => {
     switch (type.toLowerCase()) {
@@ -280,6 +295,96 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
   };
 
   const isSelected = flowSelected || data.selected;
+  const nodeColor = getNodeColor('k8s');
+
+  // Преобразуем сервисы в узлы и рёбра для вложенного графа
+  const { serviceNodes, serviceEdges } = useMemo(() => {
+    if (!data.services || data.services.length === 0) {
+      return { serviceNodes: [], serviceEdges: [] };
+    }
+
+    const nodes: Node[] = data.services.map(service => ({
+      id: service.id.toString(),
+      type: 'service',
+      position: { x: 0, y: 0 },
+      data: {
+        label: service.service,
+        subType: service.subType,
+        selected: service.id.toString() === data.selectedElementId?.toString(),
+        onClick: () => data.onServiceClick(service.id),
+      },
+      style: {
+        zIndex: service.id.toString() === data.selectedElementId?.toString() ? 1 : 0,
+      },
+    }));
+
+    const edges: Edge[] = data.services
+      .filter(service => service.next)
+      .map(service => {
+        const nextIds = Array.isArray(service.next) ? service.next : [service.next];
+        return nextIds.filter((id): id is number => id !== undefined).map(nextId => ({
+          id: `e${service.id}-${nextId}`,
+          source: service.id.toString(),
+          target: nextId.toString(),
+          type: 'smoothstep',
+          animated: true,
+          style: { 
+            stroke: '#2196F3', 
+            strokeWidth: 2,
+            opacity: 0.8,
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#2196F3',
+            width: 12,
+            height: 12,
+          },
+        }));
+      })
+      .flat();
+
+    // Используем dagre для расчета позиций
+    const dagreGraph = new dagre.graphlib.Graph();
+    dagreGraph.setDefaultEdgeLabel(() => ({}));
+    dagreGraph.setGraph({
+      rankdir: 'TB',
+      align: 'DL',
+      nodesep: 40,
+      ranksep: 60,
+      marginx: 20,
+      marginy: 20,
+    });
+
+    // Добавляем узлы в граф
+    nodes.forEach(node => {
+      dagreGraph.setNode(node.id, { width: 170, height: 50 });
+    });
+
+    // Добавляем рёбра
+    edges.forEach(edge => {
+      dagreGraph.setEdge(edge.source, edge.target);
+    });
+
+    // Выполняем layout
+    dagre.layout(dagreGraph);
+
+    // Обновляем позиции узлов
+    const layoutedNodes = nodes.map(node => {
+      const nodeWithPosition = dagreGraph.node(node.id);
+      return {
+        ...node,
+        position: {
+          x: nodeWithPosition.x - nodeWithPosition.width / 2,
+          y: nodeWithPosition.y - nodeWithPosition.height / 2,
+        },
+      };
+    });
+
+    return {
+      serviceNodes: layoutedNodes,
+      serviceEdges: edges,
+    };
+  }, [data.services, data.selectedElementId, data.onServiceClick]);
 
   return (
     <motion.div
@@ -295,108 +400,146 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
       style={{
         padding: '16px',
         borderRadius: '12px',
-        border: '2px solid #2196F3',
+        border: `2px solid ${nodeColor}`,
         background: isSelected ? '#f8f9fa' : 'white',
-        minWidth: '250px',
+        width: '400px',
+        height: '300px',
         boxShadow: isSelected 
           ? '0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px rgba(33,150,243,0.2)' 
           : '0 4px 8px rgba(0,0,0,0.05)',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         transform: isSelected ? 'translateY(-2px)' : 'none',
+        position: 'relative',
       }}
     >
       <Handle 
         type="target" 
         position={Position.Left} 
+        id="left"
         isConnectable={isConnectable}
-        style={{ background: getNodeColor('k8s') }}
+        style={{ 
+          background: nodeColor,
+          width: '12px',
+          height: '12px',
+          border: '2px solid white',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          left: '-7px',
+          boxShadow: `0 0 0 2px ${nodeColor}`,
+          transition: 'all 0.2s ease',
+          opacity: 0.8,
+          zIndex: 100
+        }}
       />
-      <div>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         <Typography
           variant="subtitle2"
           sx={{
             ...nodeStyles.title,
-            color: getNodeColor('k8s')
+            color: nodeColor,
+            mb: 1,
           }}
         >
           {data.label}
         </Typography>
         <Typography
           variant="caption"
-          sx={nodeStyles.subtitle}
+          sx={{
+            ...nodeStyles.subtitle,
+            mb: 2,
+          }}
         >
-          {data.type}
+          {data.element?.clusterName || 'k8s'}
         </Typography>
 
         <Box
           sx={{
-            ...nodeStyles.servicesContainer,
+            flex: 1,
+            minHeight: 0,
             backgroundColor: 'rgba(33, 150, 243, 0.05)',
+            borderRadius: '8px',
+            padding: '16px',
+            position: 'relative',
             '&:hover': {
               backgroundColor: 'rgba(33, 150, 243, 0.08)',
-            }
+            },
+            '& .react-flow__renderer': {
+              height: '100%',
+              width: '100%',
+            },
+            '& .react-flow__viewport': {
+              height: '100%',
+              width: '100%',
+            },
+            '& .react-flow__edge-path': {
+              strokeWidth: 2,
+              stroke: '#2196F3',
+            },
+            '& .react-flow__edge-path:hover': {
+              strokeWidth: 3,
+              stroke: '#1976D2',
+            },
+            '& .react-flow__edge.animated path': {
+              strokeDasharray: 5,
+              animation: 'dashdraw 1s linear infinite',
+            },
+            '& .react-flow__handle': {
+              opacity: 0.3,
+            },
+            '& .react-flow__handle:hover': {
+              opacity: 1,
+            },
+            '@keyframes dashdraw': {
+              '0%': {
+                strokeDashoffset: 10,
+              },
+              '100%': {
+                strokeDashoffset: 0,
+              },
+            },
           }}
         >
-          {data.services?.map((service, index) => (
-            <motion.div
-              key={service.id}
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ 
-                type: "spring",
-                stiffness: 500,
-                damping: 30,
-                delay: index * 0.1 
-              }}
-              style={{ position: 'relative' }}
-            >
-              {index === 0 && <HorizontalArrow direction="left" />}
-              <Box
-                sx={{
-                  ...nodeStyles.serviceItem,
-                  border: `1px solid ${getNodeColor('k8s')}`,
-                  backgroundColor: service.id.toString() === data.selectedElementId?.toString() ? '#e3f2fd' : 'white',
-                  cursor: 'pointer',
-                  '&:hover': {
-                    backgroundColor: '#e3f2fd',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 8px rgba(33, 150, 243, 0.15)',
-                  },
-                }}
-                onClick={() => data.onServiceClick(service.id)}
+          <ReactFlowProvider>
+            <div style={{ height: '100%', width: '100%' }}>
+              <ReactFlow
+                nodes={serviceNodes}
+                edges={serviceEdges}
+                nodeTypes={{ service: ServiceNode }}
+                fitView
+                maxZoom={1}
+                minZoom={0.5}
+                defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
+                nodesDraggable={false}
+                nodesConnectable={false}
+                elementsSelectable={false}
+                zoomOnScroll={false}
+                panOnScroll={false}
+                preventScrolling={true}
               >
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    fontWeight: 'bold',
-                    color: getNodeColor('k8s'),
-                    fontSize: '0.875rem',
-                  }}
-                >
-                  {service.service}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                    display: 'block',
-                    fontSize: '0.75rem',
-                  }}
-                >
-                  {service.subType || 'service'}
-                </Typography>
-              </Box>
-              {index < data.services.length - 1 && <ServiceArrow />}
-              {index === data.services.length - 1 && <HorizontalArrow direction="right" />}
-            </motion.div>
-          ))}
+                <Background color="#99999911" gap={16} size={1} />
+              </ReactFlow>
+            </div>
+          </ReactFlowProvider>
         </Box>
       </div>
       <Handle 
         type="source" 
         position={Position.Right} 
+        id="right"
         isConnectable={isConnectable}
-        style={{ background: getNodeColor('k8s') }}
+        style={{ 
+          background: nodeColor,
+          width: '12px',
+          height: '12px',
+          border: '2px solid white',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          right: '-7px',
+          boxShadow: `0 0 0 2px ${nodeColor}`,
+          transition: 'all 0.2s ease',
+          opacity: 0.8,
+          zIndex: 100
+        }}
       />
     </motion.div>
   );
@@ -727,6 +870,25 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
     );
   }, []);
 
+  const edgeOptions = useMemo(() => ({
+    style: {
+      strokeWidth: 2,
+      stroke: '#2196F3',
+    },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: '#2196F3',
+      width: 16,
+      height: 16,
+    },
+    type: 'smoothstep',
+    animated: true,
+    pathOptions: {
+      offset: 15,
+      curvature: 0.2,
+    }
+  }), []);
+
   const { initialNodes, initialEdges, segmentGroups } = useMemo(() => {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
@@ -752,6 +914,8 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
             selected: element.id.toString() === selectedElementId?.toString(),
             selectedElementId,
           },
+          sourcePosition: Position.Right,
+          targetPosition: Position.Left,
         };
         nodes.push(elementNode);
         segmentNodes.push(elementNode);
@@ -764,16 +928,19 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
               source: String(element.id),
               target: String(nextId),
               type: 'smoothstep',
-              markerEnd: {
-                type: MarkerType.ArrowClosed,
-                color: '#2196F3',
-                width: 20,
-                height: 20,
-              },
-              style: {
+              animated: true,
+              style: { 
                 strokeWidth: 2,
                 stroke: '#2196F3',
               },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: '#2196F3',
+                width: 16,
+                height: 16,
+              },
+              sourceHandle: 'right',
+              targetHandle: 'left',
             });
           });
         }
@@ -829,20 +996,6 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
     [onElementClick]
   );
 
-  const edgeOptions = useMemo(() => ({
-    style: {
-      strokeWidth: 2,
-      stroke: '#2196F3',
-    },
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-      color: '#2196F3',
-      width: 20,
-      height: 20,
-    },
-    animated: true,
-  }), []);
-
   return (
     <Box sx={{ height: '100%', width: '100%', position: 'relative' }}>
       <Paper
@@ -864,9 +1017,22 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
           },
           '& .react-flow__handle': {
             transition: 'all 0.2s ease',
+            opacity: 0.8,
+            background: '#2196F3',
+            width: '12px',
+            height: '12px',
+            border: '2px solid white',
+            boxShadow: '0 0 0 2px #2196F3',
           },
           '& .react-flow__handle:hover': {
             transform: 'scale(1.2)',
+            opacity: 1,
+          },
+          '& .react-flow__handle-left': {
+            left: '-7px',
+          },
+          '& .react-flow__handle-right': {
+            right: '-7px',
           },
         }}
       >

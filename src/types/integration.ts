@@ -59,6 +59,7 @@ export interface Element {
   kafkaConfig?: KafkaConfig;
   services?: Service[];
   next?: number | number[];
+  clusterName?: string;
 }
 
 export interface Segment {

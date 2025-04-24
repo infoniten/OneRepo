@@ -22,7 +22,38 @@ integration:
         host: node0.host.local
         port: 8080
         url: https://node0.host.local/api
-      next: [1, 4]
+      next: [1, 27]
+    - type: k8s
+      namespace: alpha-ns
+      subType: kafka-to-rest
+      someParameter: value
+      services:
+      - service: quarkus
+        subType: kafka-to-rest
+        configs:
+          topicName: ALPHA.TOPIC.IN.V1
+          kafkaServers: kafka1:9092,kafka2:9092
+          restHost: alpha-host.local:443
+        id: 28
+        connectionInfo:
+          host: node2.host.local
+          port: 8080
+          url: https://node2.host.local/api
+        next: 29
+      - service: egress
+        id: 29
+        connectionInfo:
+          host: node3.host.local
+          port: 9092
+          url: https://node3.host.local/api
+        
+      id: 27
+      clusterName: MegaSos
+      connectionInfo:
+        host: node1.host.local
+        port: 8080
+        url: https://node1.host.local/api
+      next: 4
     - type: k8s
       namespace: alpha-ns
       subType: kafka-to-rest
@@ -46,14 +77,14 @@ integration:
           host: node3.host.local
           port: 9092
           url: https://node3.host.local/api
-        next: 4
+        
       id: 1
-      clusterName: cluster-3
+      clusterName: Sosolkogo
       connectionInfo:
         host: node1.host.local
         port: 8080
         url: https://node1.host.local/api
-      next: [4, 5]
+      next: 4  
     - type: nginx
       requestType: post
       requestSchemaValidation: request.xsd
@@ -69,34 +100,9 @@ integration:
         port: 9092
         url: https://node4.host.local/api
       next: 5
-    - type: geo-load-balancer
-      hostname: alpha-geo
-      servers:
-      - host: alpha-srv1
-        port: 443
-      - host: alpha-srv2
-        port: 443
-      id: 5
-      connectionInfo:
-        host: node5.host.local
-        port: 443
-        url: https://node5.host.local/api
-      next: [6, 11]
-    - type: nginx
-      requestType: post
-      requestSchemaValidation: request.xsd
-      responseSchemaValidation: response.xsd
-      nginxPort: 443
-      modSecurityTurnedOffRules:
-      - modsec123
-      - modsec456
-      remoteHost: alpha-remote.local:443
-      id: 4
-      connectionInfo:
-        host: node4.host.local
-        port: 9092
-        url: https://node4.host.local/api
-      next: 5
+    
+  - segment: beta
+    elements:
     - type: geo-load-balancer
       hostname: alpha-geo
       servers:
@@ -110,8 +116,6 @@ integration:
         port: 443
         url: https://node5.host.local/api
       next: 6
-  - segment: beta
-    elements:
     - type: k8s
       namespace: beta-ns
       subType: kafka-to-rest
@@ -158,6 +162,9 @@ integration:
         port: 80
         url: https://node9.host.local/api
       next: 10
+    
+  - segment: gamma
+    elements:
     - type: geo-load-balancer
       hostname: beta-geo
       servers:
@@ -171,8 +178,6 @@ integration:
         port: 443
         url: https://node10.host.local/api
       next: 11
-  - segment: gamma
-    elements:
     - type: k8s
       namespace: gamma-ns
       subType: kafka-to-rest
@@ -218,7 +223,10 @@ integration:
         host: node14.host.local
         port: 8080
         url: https://node14.host.local/api
-      next: 15
+      next: [15, 20]
+    
+  - segment: delta
+    elements:
     - type: geo-load-balancer
       hostname: gamma-geo
       servers:
@@ -232,8 +240,6 @@ integration:
         port: 3000
         url: https://node15.host.local/api
       next: 16
-  - segment: delta
-    elements:
     - type: k8s
       namespace: delta-ns
       subType: kafka-to-rest
@@ -279,7 +285,9 @@ integration:
         host: node19.host.local
         port: 3000
         url: https://node19.host.local/api
-      next: 20
+    
+  - segment: omega
+    elements:
     - type: geo-load-balancer
       hostname: delta-geo
       servers:
@@ -293,8 +301,6 @@ integration:
         port: 3000
         url: https://node20.host.local/api
       next: 21
-  - segment: omega
-    elements:
     - type: k8s
       namespace: omega-ns
       subType: rest-to-kafka
@@ -326,34 +332,7 @@ integration:
         port: 8080
         url: https://node21.host.local/api
       next: 24
-    - type: nginx
-      requestType: post
-      requestSchemaValidation: request.xsd
-      responseSchemaValidation: response.xsd
-      nginxPort: 443
-      modSecurityTurnedOffRules:
-      - modsec123
-      - modsec456
-      remoteHost: omega-remote.local:443
-      id: 24
-      connectionInfo:
-        host: node24.host.local
-        port: 80
-        url: https://node24.host.local/api
-      next: 25
-    - type: geo-load-balancer
-      hostname: omega-geo
-      servers:
-      - host: omega-srv1
-        port: 443
-      - host: omega-srv2
-        port: 443
-      id: 25
-      connectionInfo:
-        host: node25.host.local
-        port: 443
-        url: https://node25.host.local/api
-      next: 26
+    
     - type: kafka
       name: OMEGA.TOPIC.OUT.V1
       partitions: 10
@@ -368,7 +347,7 @@ integration:
           - describe
           group:
           - consumers
-      id: 26
+      id: 24
       connectionInfo:
         host: node26.host.local
         port: 3000

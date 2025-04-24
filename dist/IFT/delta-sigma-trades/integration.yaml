@@ -60,7 +60,6 @@ integration:
           port: 80
           url: https://k8s.host.local/api
         id: 3
-        next: 4
       connectionInfo:
         host: node1.host.local
         port: 8080
@@ -154,7 +153,6 @@ integration:
           port: 8080
           url: https://k8s.host.local/api
         id: 9
-        next: 10
       connectionInfo:
         host: node6.host.local
         port: 80

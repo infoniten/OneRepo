@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogTitle, DialogContent, Box, Typography, List, ListItem, ListItemText, IconButton } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, Box, Typography, List, ListItem, ListItemText, IconButton, Chip, Divider } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { Element, Service } from '../../types/integration';
 
@@ -9,91 +9,139 @@ interface ElementDetailsModalProps {
   onClose: () => void;
 }
 
-const isService = (element: Element | Service): element is Service => {
-  return 'service' in element;
-};
-
 const isElement = (element: Element | Service): element is Element => {
   return 'type' in element;
 };
 
-const ParameterSection = ({ title, params }: { title: string; params: Record<string, any> }) => (
-  <Box sx={{ mb: 3 }}>
-    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-      {title}
-    </Typography>
-    <List dense>
-      {Object.entries(params).map(([key, value]) => (
-        <ListItem key={key}>
+const isKafkaElement = (element: Element | Service): boolean => {
+  return isElement(element) && element.type.toLowerCase() === 'kafka';
+};
+
+const formatRetentionMs = (ms: number): string => {
+  const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+  return `${days} дней`;
+};
+
+const formatBytes = (bytes: number): string => {
+  const mb = bytes / (1024 * 1024);
+  return `${mb} MB`;
+};
+
+const KafkaSection = ({ element }: { element: Element }) => {
+  if (!isKafkaElement(element)) return null;
+
+  return (
+    <Box sx={{ mb: 3 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+        Kafka Configuration
+      </Typography>
+      <List dense>
+        <ListItem>
           <ListItemText
-            primary={`${key}:`}
-            secondary={value !== undefined ? String(value) : '-'}
+            primary="Topic Name"
+            secondary={element.name}
           />
         </ListItem>
-      ))}
-    </List>
-  </Box>
-);
+        <ListItem>
+          <ListItemText
+            primary="Partitions"
+            secondary={element.partitions}
+          />
+        </ListItem>
+        {element.configuration && (
+          <>
+            <ListItem>
+              <ListItemText
+                primary="Max Message Size"
+                secondary={element.configuration?.['max.message.bytes'] ? formatBytes(element.configuration['max.message.bytes']) : '-'}
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText
+                primary="Retention Period"
+                secondary={element.configuration?.['retention.ms'] ? formatRetentionMs(element.configuration['retention.ms']) : '-'}
+              />
+            </ListItem>
+          </>
+        )}
+      </List>
+
+      {element.security && (
+        <>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+            Security
+          </Typography>
+          <List dense>
+            {element.security.principals.map((principal, index) => (
+              <ListItem key={index}>
+                <Box sx={{ width: '100%' }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    {principal.principal}
+                  </Typography>
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                      Operations:
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                      {principal.operations.map((op, i) => (
+                        <Chip key={i} label={op} size="small" color="primary" variant="outlined" />
+                      ))}
+                    </Box>
+                  </Box>
+                  {principal.group && (
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                        Groups:
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                        {principal.group.map((g, i) => (
+                          <Chip key={i} label={g} size="small" color="secondary" variant="outlined" />
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+              </ListItem>
+            ))}
+          </List>
+        </>
+      )}
+
+      {element.connectionInfo && (
+        <>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+            Connection Info
+          </Typography>
+          <List dense>
+            <ListItem>
+              <ListItemText
+                primary="Host"
+                secondary={element.connectionInfo.host}
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText
+                primary="Port"
+                secondary={element.connectionInfo.port}
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText
+                primary="URL"
+                secondary={element.connectionInfo.url}
+              />
+            </ListItem>
+          </List>
+        </>
+      )}
+    </Box>
+  );
+};
 
 export const ElementDetailsModal: React.FC<ElementDetailsModalProps> = ({ element, open, onClose }) => {
   if (!element) return null;
-
-  const getInParams = (element: Element | Service) => {
-    if (isService(element)) {
-      return {
-        host: element.connectionInfo?.host,
-        port: element.connectionInfo?.port,
-        url: element.connectionInfo?.url,
-        dn_ist: element.dnName,
-        dn_nat: undefined,
-        dn_prom: undefined,
-        kafka_topic: undefined,
-        group_id: undefined,
-        bootstrap: undefined,
-      };
-    }
-    return {
-      host: element.connection?.url?.split(':')[0],
-      port: element.connection?.port,
-      url: element.connection?.url,
-      dn_ist: undefined,
-      dn_nat: undefined,
-      dn_prom: undefined,
-      kafka_topic: element.kafkaConfig?.max_message_bytes,
-      group_id: undefined,
-      bootstrap: undefined,
-    };
-  };
-
-  const getOutParams = (element: Element | Service) => {
-    if (isService(element)) {
-      return {
-        host: element.destinationInfo?.host,
-        port: element.destinationInfo?.port,
-        url: element.destinationInfo?.url,
-        dn_ist: undefined,
-        dn_nat: undefined,
-        dn_prom: undefined,
-      };
-    }
-    return {
-      host: undefined,
-      port: undefined,
-      url: undefined,
-      dn_ist: undefined,
-      dn_nat: undefined,
-      dn_prom: undefined,
-    };
-  };
-
-  const getCommonSettings = (_: Element | Service) => {
-    return {
-      max_buff_size: undefined,
-      redelivery_count: undefined,
-      cpu: undefined,
-      memory: undefined,
-    };
-  };
 
   return (
     <Dialog
@@ -109,9 +157,14 @@ export const ElementDetailsModal: React.FC<ElementDetailsModalProps> = ({ elemen
       }}
     >
       <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6">
-          {isElement(element) ? element.name : element.service}
-        </Typography>
+        <Box>
+          <Typography variant="h6" component="div">
+            {isElement(element) ? element.name : element.service}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {element.type}
+          </Typography>
+        </Box>
         <IconButton
           aria-label="close"
           onClick={onClose}
@@ -121,19 +174,9 @@ export const ElementDetailsModal: React.FC<ElementDetailsModalProps> = ({ elemen
         </IconButton>
       </DialogTitle>
       <DialogContent dividers>
-        <ParameterSection title="In-параметры" params={getInParams(element)} />
-        <ParameterSection title="Out-параметры" params={getOutParams(element)} />
-        <ParameterSection title="Общие настройки" params={getCommonSettings(element)} />
-        
-        {/* Схема валидации - пока просто заглушка */}
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-            Схема валидации
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            yaml.ois-schema.xsd
-          </Typography>
-        </Box>
+        {isElement(element) && isKafkaElement(element) && (
+          <KafkaSection element={element} />
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -60,6 +60,12 @@ export interface Element {
   services?: Service[];
   next?: number | number[];
   clusterName?: string;
+  partitions?: number;
+  configuration?: {
+    max_message_bytes?: number;
+    retention_ms?: number;
+    [key: string]: any;
+  };
 }
 
 export interface Segment {

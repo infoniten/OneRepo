@@ -61,6 +61,14 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
 
   const isSelected = flowSelected || data.selected;
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Предотвращаем всплытие события
+    console.log('CustomNode clicked, data:', data);
+    if (data.onElementClick && data.id !== undefined) {
+      data.onElementClick(data.id);
+    }
+  };
+
   return (
     <motion.div
       initial={{ scale: 0.8, opacity: 0 }}
@@ -84,7 +92,9 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         transform: isSelected ? 'translateY(-2px)' : 'none',
         position: 'relative',
+        cursor: 'pointer',
       }}
+      onClick={handleClick}
     >
       <Handle 
         type="target" 
@@ -901,17 +911,20 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
       segment.elements.forEach((element: Element) => {
         if (!element.type) return; // Пропускаем элементы без типа
 
+        const elementId = typeof element.id === 'number' ? element.id : parseInt(element.id.toString(), 10);
         const elementNode = {
-          id: element.id.toString(),
+          id: elementId.toString(),
           type: element.type.toLowerCase() === 'k8s' ? 'k8s' : 'custom',
           position: { x: 0, y: 0 },
           data: { 
+            id: elementId,
             label: element.name || element.type,
             type: element.type,
             element: element,
             services: element.services,
             onServiceClick: onElementClick,
-            selected: element.id.toString() === selectedElementId?.toString(),
+            onElementClick: onElementClick,
+            selected: elementId.toString() === selectedElementId?.toString(),
             selectedElementId,
           },
           sourcePosition: Position.Right,
@@ -989,8 +1002,9 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
 
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      if (onElementClick && node.id) {
-        onElementClick(node.id);
+      console.log('Node clicked:', node);
+      if (onElementClick && node.data?.id) {
+        onElementClick(node.data.id);
       }
     },
     [onElementClick]

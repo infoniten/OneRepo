@@ -34,7 +34,7 @@ export interface Service {
   dnName?: string;
   connectionInfo: ConnectionInfo;
   destinationInfo?: DestinationInfo;
-  next?: number;
+  next?: number | number[];
   selected?: boolean;
   label?: string;
 }
@@ -58,7 +58,7 @@ export interface Element {
   security?: Security;
   kafkaConfig?: KafkaConfig;
   services?: Service[];
-  next?: number;
+  next?: number | number[];
 }
 
 export interface Segment {

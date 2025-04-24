@@ -580,42 +580,40 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   
-  // Уменьшаем отступы между узлами вдвое
   dagreGraph.setGraph({ 
     rankdir: direction,
-    nodesep: 100,  // Было 200
-    ranksep: 125,  // Было 250
-    edgesep: 40,   // Было 80
-    marginx: 25,   // Было 50
-    marginy: 25    // Было 50
+    nodesep: 100,  // Уменьшенное расстояние между узлами по горизонтали
+    ranksep: 125,  // Уменьшенное расстояние между рангами
+    edgesep: 40,   // Расстояние между рёбрами
+    marginx: 25,   // Отступы от краёв
+    marginy: 25,   // Отступы от краёв
+    acyclicer: 'greedy',     // Добавляем для лучшей обработки циклов
+    ranker: 'network-simplex' // Улучшаем расположение узлов
   });
 
   nodes.forEach((node: Node) => {
-    // Оптимизируем размеры узлов в зависимости от типа
     const nodeConfig = (() => {
       switch (node.type) {
         case 'k8s':
           return {
-            width: 350,    // Было 400
-            height: 250    // Было 300
+            width: 350,
+            height: 250
           };
         case 'custom':
-          // Для Kafka топиков делаем узлы пошире
           if (node.data?.type?.toLowerCase() === 'kafka') {
             return {
-              width: 240,  // Было 280
-              height: 90   // Было 100
+              width: 240,
+              height: 90
             };
           }
-          // Для остальных типов (nginx, geo-load-balancer и т.д.)
           return {
-            width: 180,    // Было 220
-            height: 90     // Было 100
+            width: 180,
+            height: 90
           };
         default:
           return {
-            width: 180,    // Было 220
-            height: 90     // Было 100
+            width: 180,
+            height: 90
           };
       }
     })();
@@ -637,8 +635,8 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
     return {
       ...node,
       position: {
-        x: nodeWithPosition.x - width / 2,   // Центрируем узел
-        y: nodeWithPosition.y - height / 2    // Центрируем узел
+        x: nodeWithPosition.x - width / 2,
+        y: nodeWithPosition.y - height / 2
       },
     };
   });
@@ -759,11 +757,24 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
         segmentNodes.push(elementNode);
 
         if (element.next) {
-          edges.push({
-            id: `e${nodeId++}`,
-            source: String(element.id),
-            target: String(element.next),
-            type: 'smoothstep',
+          const nextIds = Array.isArray(element.next) ? element.next : [element.next];
+          nextIds.forEach(nextId => {
+            edges.push({
+              id: `e${nodeId++}`,
+              source: String(element.id),
+              target: String(nextId),
+              type: 'smoothstep',
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: '#2196F3',
+                width: 20,
+                height: 20,
+              },
+              style: {
+                strokeWidth: 2,
+                stroke: '#2196F3',
+              },
+            });
           });
         }
       });

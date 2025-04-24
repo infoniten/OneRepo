@@ -22,7 +22,38 @@ integration:
         host: node0.host.local
         port: 8080
         url: https://node0.host.local/api
-      next: 1
+      next: [1, 27]
+    - type: k8s
+      namespace: alpha-ns
+      subType: kafka-to-rest
+      someParameter: value
+      services:
+      - service: quarkus
+        subType: kafka-to-rest
+        configs:
+          topicName: ALPHA.TOPIC.IN.V1
+          kafkaServers: kafka1:9092,kafka2:9092
+          restHost: alpha-host.local:443
+        id: 28
+        connectionInfo:
+          host: node2.host.local
+          port: 8080
+          url: https://node2.host.local/api
+        next: 29
+      - service: egress
+        id: 29
+        connectionInfo:
+          host: node3.host.local
+          port: 9092
+          url: https://node3.host.local/api
+        
+      id: 27
+      clusterName: cluster-3
+      connectionInfo:
+        host: node1.host.local
+        port: 8080
+        url: https://node1.host.local/api
+      next: 4
     - type: k8s
       namespace: alpha-ns
       subType: kafka-to-rest
@@ -46,14 +77,14 @@ integration:
           host: node3.host.local
           port: 9092
           url: https://node3.host.local/api
-        next: 4
+        
       id: 1
       clusterName: cluster-3
       connectionInfo:
         host: node1.host.local
         port: 8080
         url: https://node1.host.local/api
-      next: 4
+      next: 4  
     - type: nginx
       requestType: post
       requestSchemaValidation: request.xsd
@@ -69,6 +100,9 @@ integration:
         port: 9092
         url: https://node4.host.local/api
       next: 5
+    
+  - segment: beta
+    elements:
     - type: geo-load-balancer
       hostname: alpha-geo
       servers:
@@ -82,8 +116,6 @@ integration:
         port: 443
         url: https://node5.host.local/api
       next: 6
-  - segment: beta
-    elements:
     - type: k8s
       namespace: beta-ns
       subType: kafka-to-rest

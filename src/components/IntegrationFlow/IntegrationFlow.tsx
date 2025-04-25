@@ -80,6 +80,21 @@ const getBorderStyle = (error?: number, warn?: number): { color: string; width: 
 // Модифицируем CustomNode для обычных элементов
 const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) => {
   const borderStyle = getBorderStyle(data.element?.error, data.element?.warn);
+  const isKafka = data.type?.toLowerCase() === 'kafka';
+  const warningCount = data.element?.warn || 0;
+  const errorCount = data.element?.error || 0;
+
+  const getPulseColor = () => {
+    if (errorCount > 0) return 'rgba(239, 83, 80, 0.5)';
+    if (warningCount > 0) return 'rgba(255, 167, 38, 0.5)';
+    return 'transparent';
+  };
+
+  const getPulseAnimation = () => {
+    if (errorCount > 0) return 'pulseError 1s cubic-bezier(0.4, 0, 0.6, 1) infinite';
+    if (warningCount > 0) return 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite';
+    return 'none';
+  };
 
   const getNodeColor = (type: string): string => {
     switch (type.toLowerCase()) {
@@ -99,92 +114,158 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
   const isSelected = flowSelected || data.selected;
 
   return (
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.8, opacity: 0 }}
-      transition={{ 
-        type: "spring",
-        stiffness: 260,
-        damping: 20,
-        duration: 0.3 
-      }}
-      style={{
-        padding: '12px',
-        borderRadius: '12px',
-        border: `${borderStyle.width}px solid ${borderStyle.color}`,
-        background: isSelected ? '#f8f9fa' : 'white',
-        minWidth: '200px',
-        boxShadow: isSelected 
-          ? `0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px ${borderStyle.color}22` 
-          : '0 4px 8px rgba(0,0,0,0.05)',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        transform: isSelected ? 'translateY(-2px)' : 'none',
-        position: 'relative',
-      }}
-    >
-      <Handle 
-        type="target" 
-        position={Position.Left} 
-        isConnectable={isConnectable}
-        style={{ 
-          background: getNodeColor(data.type),
-          width: '12px',
-          height: '12px',
-          border: '2px solid white',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          left: '-7px',
-          boxShadow: `0 0 0 2px ${getNodeColor(data.type)}`,
-          transition: 'all 0.2s ease',
-          opacity: 0.8
+    <Box sx={{ position: 'relative' }}>
+      {(errorCount > 0 || warningCount > 0) && (
+        <>
+          <Box
+            sx={{
+              content: '""',
+              position: 'absolute',
+              top: -4,
+              left: -4,
+              right: -4,
+              bottom: -4,
+              borderRadius: '16px',
+              background: getPulseColor(),
+              zIndex: -1,
+              animation: getPulseAnimation(),
+              transformOrigin: 'center',
+              filter: 'blur(1px)',
+            }}
+          />
+          <Box
+            sx={{
+              content: '""',
+              position: 'absolute',
+              top: -4,
+              left: -4,
+              right: -4,
+              bottom: -4,
+              borderRadius: '16px',
+              background: getPulseColor(),
+              zIndex: -1,
+              animation: `${getPulseAnimation()} 0.5s delay`,
+              animationDelay: '0.5s',
+              transformOrigin: 'center',
+              filter: 'blur(1px)',
+            }}
+          />
+        </>
+      )}
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.8, opacity: 0 }}
+        transition={{ 
+          type: "spring",
+          stiffness: 260,
+          damping: 20,
+          duration: 0.3 
         }}
-      />
-      <div>
-        <Typography
-          variant="subtitle2"
-          sx={{
-            fontWeight: 600,
-            color: getNodeColor(data.type),
-            fontSize: '1.1rem',
-            mb: 0.5,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-          }}
-        >
-          {data.label}
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            color: 'text.secondary',
-            display: 'block',
-            fontSize: '0.875rem',
-            opacity: 0.8,
-          }}
-        >
-          {data.type}
-        </Typography>
-      </div>
-      <Handle 
-        type="source" 
-        position={Position.Right} 
-        isConnectable={isConnectable}
-        style={{ 
-          background: getNodeColor(data.type),
-          width: '12px',
-          height: '12px',
-          border: '2px solid white',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          right: '-7px',
-          boxShadow: `0 0 0 2px ${getNodeColor(data.type)}`,
-          transition: 'all 0.2s ease',
-          opacity: 0.8
+        style={{
+          padding: '12px',
+          borderRadius: '12px',
+          border: `${borderStyle.width}px solid ${borderStyle.color}`,
+          background: isSelected ? '#f8f9fa' : 'white',
+          width: '100%',
+          minWidth: isKafka ? '240px' : '180px',
+          boxShadow: isSelected 
+            ? `0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px ${borderStyle.color}22` 
+            : '0 4px 8px rgba(0,0,0,0.05)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: isSelected ? 'translateY(-2px)' : 'none',
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
         }}
-      />
-    </motion.div>
+      >
+        <Handle 
+          type="target" 
+          position={Position.Left} 
+          isConnectable={isConnectable}
+          style={{ 
+            background: getNodeColor(data.type),
+            width: '12px',
+            height: '12px',
+            border: '2px solid white',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            left: '-7px',
+            boxShadow: `0 0 0 2px ${getNodeColor(data.type)}`,
+            transition: 'all 0.2s ease',
+            opacity: 0.8
+          }}
+        />
+        <div style={{ 
+          overflow: 'hidden',
+          width: '100%',
+          padding: '0 4px'
+        }}>
+          <Typography
+            variant="subtitle2"
+            sx={{
+              fontWeight: 600,
+              color: getNodeColor(data.type),
+              fontSize: '1.1rem',
+              mb: 0.5,
+              display: 'block',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              width: '100%',
+              textAlign: isKafka ? 'left' : 'center'
+            }}
+          >
+            {data.label}
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+              display: 'block',
+              fontSize: '0.875rem',
+              opacity: 0.8,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              width: '100%',
+              textAlign: isKafka ? 'left' : 'center'
+            }}
+          >
+            {data.type}
+          </Typography>
+        </div>
+        {(warningCount > 0 || errorCount > 0) && (
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 1, 
+            justifyContent: isKafka ? 'flex-start' : 'center',
+            mt: 'auto'
+          }}>
+            {warningCount > 0 && <Badge type="warning" count={warningCount} />}
+            {errorCount > 0 && <Badge type="error" count={errorCount} />}
+          </Box>
+        )}
+        <Handle 
+          type="source" 
+          position={Position.Right} 
+          isConnectable={isConnectable}
+          style={{ 
+            background: getNodeColor(data.type),
+            width: '12px',
+            height: '12px',
+            border: '2px solid white',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            right: '-7px',
+            boxShadow: `0 0 0 2px ${getNodeColor(data.type)}`,
+            transition: 'all 0.2s ease',
+            opacity: 0.8
+          }}
+        />
+      </motion.div>
+    </Box>
   );
 };
 
@@ -294,6 +375,18 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
   const warningCount = element?.warn || 0;
   const errorCount = element?.error || 0;
   const borderStyle = getBorderStyle(errorCount, warningCount);
+
+  const getPulseColor = () => {
+    if (errorCount > 0) return 'rgba(239, 83, 80, 0.5)';
+    if (warningCount > 0) return 'rgba(255, 167, 38, 0.5)';
+    return 'transparent';
+  };
+
+  const getPulseAnimation = () => {
+    if (errorCount > 0) return 'pulseError 1s cubic-bezier(0.4, 0, 0.6, 1) infinite';
+    if (warningCount > 0) return 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite';
+    return 'none';
+  };
 
   const handleZoomIn = React.useCallback(() => {
     if (reactFlowInstanceRef.current) {
@@ -461,258 +554,311 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
   }, [data.services, data.selectedElementId, data.onServiceClick]);
 
   return (
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.8, opacity: 0 }}
-      transition={{ 
-        type: "spring",
-        stiffness: 260,
-        damping: 20,
-        duration: 0.3 
-      }}
-      style={{
-        padding: '16px',
-        borderRadius: '12px',
-        border: `${borderStyle.width}px solid ${borderStyle.color}`,
-        background: isSelected ? '#f8f9fa' : 'white',
-        width: '400px',
-        height: '300px',
-        boxShadow: isSelected 
-          ? `0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px ${borderStyle.color}22` 
-          : '0 4px 8px rgba(0,0,0,0.05)',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        transform: isSelected ? 'translateY(-2px)' : 'none',
-        position: 'relative',
-      }}
-    >
-      <Handle 
-        type="target" 
-        position={Position.Left} 
-        id="left"
-        isConnectable={isConnectable}
-        style={{ 
-          background: borderStyle.color,
-          width: '12px',
-          height: '12px',
-          border: '2px solid white',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          left: '-7px',
-          boxShadow: `0 0 0 2px ${borderStyle.color}`,
-          transition: 'all 0.2s ease',
-          opacity: 0.8,
-          zIndex: 100
-        }}
-      />
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <Typography
-          variant="subtitle2"
-          sx={{
-            fontWeight: 'bold',
-            color: borderStyle.color,
-            fontSize: '1.1rem',
-            mb: 0.5,
-          }}
-        >
-          {data.label}
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            color: 'text.secondary',
-            display: 'block',
-            fontSize: '0.875rem',
-            mb: 1,
-          }}
-        >
-          {element?.clusterName || 'k8s'}
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-          {warningCount > 0 && <Badge type="warning" count={warningCount} />}
-          {errorCount > 0 && <Badge type="error" count={errorCount} />}
-        </Box>
-        <Box
-          sx={{
-            flex: 1,
-            minHeight: 0,
-            backgroundColor: 'rgba(33, 150, 243, 0.05)',
-            borderRadius: '8px',
-            padding: '16px',
-            position: 'relative',
-            '&:hover': {
-              backgroundColor: 'rgba(33, 150, 243, 0.08)',
-            },
-            '& .react-flow__renderer': {
-              height: '100%',
-              width: '100%',
-            },
-            '& .react-flow__viewport': {
-              height: '100%',
-              width: '100%',
-            },
-            '& .react-flow__edge-path': {
-              strokeWidth: 2,
-              stroke: '#2196F3',
-            },
-            '& .react-flow__edge-path:hover': {
-              strokeWidth: 3,
-              stroke: '#1976D2',
-            },
-            '& .react-flow__edge.animated path': {
-              strokeDasharray: 5,
-              animation: 'dashdraw 1s linear infinite',
-            },
-            '& .react-flow__handle': {
-              opacity: 0.3,
-            },
-            '& .react-flow__handle:hover': {
-              opacity: 1,
-            },
-            '@keyframes dashdraw': {
-              '0%': {
-                strokeDashoffset: 10,
-              },
-              '100%': {
-                strokeDashoffset: 0,
-              },
-            },
-          }}
-        >
+    <Box sx={{ position: 'relative' }}>
+      {(errorCount > 0 || warningCount > 0) && (
+        <>
           <Box
             sx={{
+              content: '""',
               position: 'absolute',
-              top: 8,
-              right: 8,
-              zIndex: 5,
-              display: 'flex',
-              gap: 0.5,
-              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-              padding: '4px',
-              borderRadius: '4px',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              top: -4,
+              left: -4,
+              right: -4,
+              bottom: -4,
+              borderRadius: '16px',
+              background: getPulseColor(),
+              zIndex: -1,
+              animation: getPulseAnimation(),
+              transformOrigin: 'center',
+              filter: 'blur(1px)',
+            }}
+          />
+          <Box
+            sx={{
+              content: '""',
+              position: 'absolute',
+              top: -4,
+              left: -4,
+              right: -4,
+              bottom: -4,
+              borderRadius: '16px',
+              background: getPulseColor(),
+              zIndex: -1,
+              animation: `${getPulseAnimation()} 0.5s delay`,
+              animationDelay: '0.5s',
+              transformOrigin: 'center',
+              filter: 'blur(1px)',
+            }}
+          />
+        </>
+      )}
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.8, opacity: 0 }}
+        transition={{ 
+          type: "spring",
+          stiffness: 260,
+          damping: 20,
+          duration: 0.3 
+        }}
+        style={{
+          padding: '16px',
+          borderRadius: '12px',
+          border: `${borderStyle.width}px solid ${borderStyle.color}`,
+          background: isSelected ? '#f8f9fa' : 'white',
+          width: '400px',
+          height: '300px',
+          boxShadow: isSelected 
+            ? `0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px ${borderStyle.color}22` 
+            : '0 4px 8px rgba(0,0,0,0.05)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: isSelected ? 'translateY(-2px)' : 'none',
+          position: 'relative',
+        }}
+      >
+        <Handle 
+          type="target" 
+          position={Position.Left} 
+          id="left"
+          isConnectable={isConnectable}
+          style={{ 
+            background: borderStyle.color,
+            width: '12px',
+            height: '12px',
+            border: '2px solid white',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            left: '-7px',
+            boxShadow: `0 0 0 2px ${borderStyle.color}`,
+            transition: 'all 0.2s ease',
+            opacity: 0.8,
+            zIndex: 100
+          }}
+        />
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Typography
+            variant="subtitle2"
+            sx={{
+              fontWeight: 'bold',
+              color: borderStyle.color,
+              fontSize: '1.1rem',
+              mb: 0.5,
             }}
           >
-            <Tooltip title="Уменьшить">
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleZoomOut();
-                }}
-                sx={{
-                  padding: '4px',
-                  backgroundColor: 'white',
-                  '&:hover': {
-                    backgroundColor: '#f5f5f5',
-                  },
-                }}
-              >
-                <ZoomOutIcon sx={{ fontSize: 16 }} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Увеличить">
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleZoomIn();
-                }}
-                sx={{
-                  padding: '4px',
-                  backgroundColor: 'white',
-                  '&:hover': {
-                    backgroundColor: '#f5f5f5',
-                  },
-                }}
-              >
-                <ZoomInIcon sx={{ fontSize: 16 }} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="По центру">
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleFitView();
-                }}
-                sx={{
-                  padding: '4px',
-                  backgroundColor: 'white',
-                  '&:hover': {
-                    backgroundColor: '#f5f5f5',
-                  },
-                }}
-              >
-                <CenterFocusStrongIcon sx={{ fontSize: 16 }} />
-              </IconButton>
-            </Tooltip>
+            {data.label}
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+              display: 'block',
+              fontSize: '0.875rem',
+              mb: 1,
+            }}
+          >
+            {element?.clusterName || 'k8s'}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+            {warningCount > 0 && <Badge type="warning" count={warningCount} />}
+            {errorCount > 0 && <Badge type="error" count={errorCount} />}
           </Box>
-          <ReactFlowProvider>
-            <div style={{ height: '100%', width: '100%' }}>
-              <ReactFlow
-                nodes={serviceNodes}
-                edges={serviceEdges}
-                nodeTypes={{ service: ServiceNode }}
-                onInit={onInit}
-                fitView
-                maxZoom={1.5}
-                minZoom={0.3}
-                defaultViewport={{ x: 0, y: 0, zoom }}
-                nodesDraggable={false}
-                nodesConnectable={false}
-                elementsSelectable={false}
-                zoomOnScroll={true}
-                panOnScroll={true}
-                preventScrolling={false}
-                defaultEdgeOptions={{
-                  type: 'smoothstep',
-                  animated: true,
-                  style: { 
-                    stroke: '#2196F3', 
-                    strokeWidth: 2,
-                    opacity: 0.8,
-                  },
-                  markerEnd: {
-                    type: MarkerType.ArrowClosed,
-                    color: '#2196F3',
-                    width: 12,
-                    height: 12,
-                  }
-                }}
-              >
-                <Background color="#99999911" gap={16} size={1} />
-              </ReactFlow>
-            </div>
-          </ReactFlowProvider>
-        </Box>
-      </div>
-      <Handle 
-        type="source" 
-        position={Position.Right} 
-        id="right"
-        isConnectable={isConnectable}
-        style={{ 
-          background: borderStyle.color,
-          width: '12px',
-          height: '12px',
-          border: '2px solid white',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          right: '-7px',
-          boxShadow: `0 0 0 2px ${borderStyle.color}`,
-          transition: 'all 0.2s ease',
-          opacity: 0.8,
-          zIndex: 100
-        }}
-      />
-    </motion.div>
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              backgroundColor: 'rgba(33, 150, 243, 0.05)',
+              borderRadius: '8px',
+              padding: '16px',
+              position: 'relative',
+              '&:hover': {
+                backgroundColor: 'rgba(33, 150, 243, 0.08)',
+              },
+              '& .react-flow__renderer': {
+                height: '100%',
+                width: '100%',
+              },
+              '& .react-flow__viewport': {
+                height: '100%',
+                width: '100%',
+              },
+              '& .react-flow__edge-path': {
+                strokeWidth: 2,
+                stroke: '#2196F3',
+              },
+              '& .react-flow__edge-path:hover': {
+                strokeWidth: 3,
+                stroke: '#1976D2',
+              },
+              '& .react-flow__edge.animated path': {
+                strokeDasharray: 5,
+                animation: 'dashdraw 1s linear infinite',
+              },
+              '& .react-flow__handle': {
+                opacity: 0.3,
+              },
+              '& .react-flow__handle:hover': {
+                opacity: 1,
+              },
+              '@keyframes dashdraw': {
+                '0%': {
+                  strokeDashoffset: 10,
+                },
+                '100%': {
+                  strokeDashoffset: 0,
+                },
+              },
+            }}
+          >
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                zIndex: 5,
+                display: 'flex',
+                gap: 0.5,
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                padding: '4px',
+                borderRadius: '4px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              }}
+            >
+              <Tooltip title="Уменьшить">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleZoomOut();
+                  }}
+                  sx={{
+                    padding: '4px',
+                    backgroundColor: 'white',
+                    '&:hover': {
+                      backgroundColor: '#f5f5f5',
+                    },
+                  }}
+                >
+                  <ZoomOutIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Увеличить">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleZoomIn();
+                  }}
+                  sx={{
+                    padding: '4px',
+                    backgroundColor: 'white',
+                    '&:hover': {
+                      backgroundColor: '#f5f5f5',
+                    },
+                  }}
+                >
+                  <ZoomInIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="По центру">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleFitView();
+                  }}
+                  sx={{
+                    padding: '4px',
+                    backgroundColor: 'white',
+                    '&:hover': {
+                      backgroundColor: '#f5f5f5',
+                    },
+                  }}
+                >
+                  <CenterFocusStrongIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+            <ReactFlowProvider>
+              <div style={{ height: '100%', width: '100%' }}>
+                <ReactFlow
+                  nodes={serviceNodes}
+                  edges={serviceEdges}
+                  nodeTypes={{ service: ServiceNode }}
+                  onInit={onInit}
+                  fitView
+                  maxZoom={1.5}
+                  minZoom={0.3}
+                  defaultViewport={{ x: 0, y: 0, zoom }}
+                  nodesDraggable={false}
+                  nodesConnectable={false}
+                  elementsSelectable={false}
+                  zoomOnScroll={true}
+                  panOnScroll={true}
+                  preventScrolling={false}
+                  defaultEdgeOptions={{
+                    type: 'smoothstep',
+                    animated: true,
+                    style: { 
+                      stroke: '#2196F3', 
+                      strokeWidth: 2,
+                      opacity: 0.8,
+                    },
+                    markerEnd: {
+                      type: MarkerType.ArrowClosed,
+                      color: '#2196F3',
+                      width: 12,
+                      height: 12,
+                    }
+                  }}
+                >
+                  <Background color="#99999911" gap={16} size={1} />
+                </ReactFlow>
+              </div>
+            </ReactFlowProvider>
+          </Box>
+        </div>
+        <Handle 
+          type="source" 
+          position={Position.Right} 
+          id="right"
+          isConnectable={isConnectable}
+          style={{ 
+            background: borderStyle.color,
+            width: '12px',
+            height: '12px',
+            border: '2px solid white',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            right: '-7px',
+            boxShadow: `0 0 0 2px ${borderStyle.color}`,
+            transition: 'all 0.2s ease',
+            opacity: 0.8,
+            zIndex: 100
+          }}
+        />
+      </motion.div>
+    </Box>
   );
 };
 
 // Обновляем ServiceNode для использования динамических размеров
 const ServiceNode = ({ data }: NodeProps) => {
   const borderStyle = getBorderStyle(data.error, data.warn);
+  const warningCount = data.warn || 0;
+  const errorCount = data.error || 0;
+
+  const getPulseColor = () => {
+    if (errorCount > 0) return 'rgba(239, 83, 80, 0.5)';
+    if (warningCount > 0) return 'rgba(255, 167, 38, 0.5)';
+    return 'transparent';
+  };
+
+  const getPulseAnimation = () => {
+    if (errorCount > 0) return 'pulseError 1s cubic-bezier(0.4, 0, 0.6, 1) infinite';
+    if (warningCount > 0) return 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite';
+    return 'none';
+  };
   
   return (
     <Box
@@ -734,6 +880,35 @@ const ServiceNode = ({ data }: NodeProps) => {
           transform: 'translateY(-2px)',
         },
         transition: 'all 0.2s ease',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: -4,
+          left: -4,
+          right: -4,
+          bottom: -4,
+          borderRadius: '12px',
+          background: getPulseColor(),
+          zIndex: -1,
+          animation: getPulseAnimation(),
+          transformOrigin: 'center',
+          filter: 'blur(1px)',
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          top: -4,
+          left: -4,
+          right: -4,
+          bottom: -4,
+          borderRadius: '12px',
+          background: getPulseColor(),
+          zIndex: -1,
+          animation: `${getPulseAnimation()} 0.5s delay`,
+          animationDelay: '0.5s',
+          transformOrigin: 'center',
+          filter: 'blur(1px)',
+        }
       }}
       onClick={data.onClick}
     >
@@ -979,15 +1154,32 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   
+  // Сначала рассчитаем необходимые размеры для каждого узла
+  const nodeDimensions = nodes.map(node => {
+    if (node.data?.type?.toLowerCase() === 'kafka') {
+      const labelLength = (node.data.label || '').length;
+      const minWidth = Math.max(
+        240, // Минимальная ширина для Kafka
+        labelLength * 11 + 70 // Точная настройка: 11px на символ + 70px отступов
+      );
+      return {
+        id: node.id,
+        width: minWidth,
+        height: 90
+      };
+    }
+    return null;
+  }).filter(Boolean);
+
   dagreGraph.setGraph({ 
     rankdir: direction,
-    nodesep: 100,  // Возвращаем прежнее расстояние между узлами по горизонтали
-    ranksep: 125,  // Возвращаем прежнее расстояние между рангами
-    edgesep: 40,   // Возвращаем прежнее расстояние между рёбрами
-    marginx: 25,   // Возвращаем прежние отступы от краёв
-    marginy: 25,   // Возвращаем прежние отступы от краёв
-    acyclicer: 'greedy',     // Добавляем для лучшей обработки циклов
-    ranker: 'network-simplex' // Улучшаем расположение узлов
+    nodesep: 100,
+    ranksep: 125,
+    edgesep: 40,
+    marginx: 25,
+    marginy: 25,
+    acyclicer: 'greedy',
+    ranker: 'network-simplex'
   });
 
   nodes.forEach((node: Node) => {
@@ -1000,8 +1192,10 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
           };
         case 'custom':
           if (node.data?.type?.toLowerCase() === 'kafka') {
+            // Используем рассчитанную ширину для Kafka узла
+            const kafkaNode = nodeDimensions.find(n => n?.id === node.id);
             return {
-              width: 240,
+              width: kafkaNode?.width || 240,
               height: 90
             };
           }
@@ -1017,11 +1211,24 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
       }
     })();
 
-    dagreGraph.setNode(node.id, nodeConfig);
+    dagreGraph.setNode(node.id, {
+      ...nodeConfig,
+      paddingLeft: 15,
+      paddingRight: 15,
+      paddingTop: 10,
+      paddingBottom: 10
+    });
   });
 
+  // Добавляем рёбра с минимальным расстоянием, зависящим от ширины узла
   edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    const minlen = sourceNode?.data?.type?.toLowerCase() === 'kafka' ? 2 : 1;
+    
+    dagreGraph.setEdge(edge.source, edge.target, {
+      minlen,
+      weight: 1
+    });
   });
 
   dagre.layout(dagreGraph);
@@ -1036,6 +1243,10 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
       position: {
         x: nodeWithPosition.x - width / 2,
         y: nodeWithPosition.y - height / 2
+      },
+      style: {
+        ...node.style,
+        width: node.data?.type?.toLowerCase() === 'kafka' ? `${width}px` : undefined
       }
     };
   });
@@ -1271,7 +1482,39 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
   );
 
   return (
-    <Box sx={{ height: '100%', width: '100%', position: 'relative' }}>
+    <Box sx={{ 
+      height: '100%', 
+      width: '100%', 
+      position: 'relative',
+      '@keyframes pulse': {
+        '0%': {
+          transform: 'scale(1)',
+          opacity: 0.8,
+        },
+        '50%': {
+          transform: 'scale(1.3)',
+          opacity: 0.4,
+        },
+        '100%': {
+          transform: 'scale(1.5)',
+          opacity: 0,
+        },
+      },
+      '@keyframes pulseError': {
+        '0%': {
+          transform: 'scale(1)',
+          opacity: 0.8,
+        },
+        '50%': {
+          transform: 'scale(1.3)',
+          opacity: 0.4,
+        },
+        '100%': {
+          transform: 'scale(1.5)',
+          opacity: 0,
+        },
+      },
+    }}>
       <Paper
         elevation={0}
         sx={{

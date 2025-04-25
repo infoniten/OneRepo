@@ -37,6 +37,8 @@ export interface Service {
   next?: number | number[];
   selected?: boolean;
   label?: string;
+  warn?: number;
+  error?: number;
 }
 
 export interface Connection {
@@ -60,6 +62,8 @@ export interface Element {
   services?: Service[];
   next?: number | number[];
   clusterName?: string;
+  warn?: number;
+  error?: number;
 }
 
 export interface Segment {
@@ -80,4 +84,15 @@ export interface Integration {
 
 export interface IntegrationFlow {
   integration: Integration;
+}
+
+export interface ValidationIssue {
+  type: 'warning' | 'error';
+  message: string;
+  code: string;
+}
+
+export interface ElementWithIssues {
+  warnings: ValidationIssue[];
+  errors: ValidationIssue[];
 } 

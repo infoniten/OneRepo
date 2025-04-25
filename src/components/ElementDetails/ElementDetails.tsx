@@ -1,10 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Box, Typography, Paper, List, ListItem, ListItemText } from '@mui/material';
-import { Element, Service, SecurityPrincipal } from '../../types/integration';
+import { Element, Service, SecurityPrincipal, ValidationIssue } from '../../types/integration';
+import Badge from '../Badge/Badge';
+import './ElementDetails.css';
 
 interface ElementDetailsProps {
-  element: Element | Service | null;
+  element: Element & {
+    warnings?: ValidationIssue[];
+    errors?: ValidationIssue[];
+  };
 }
 
 const isService = (element: Element | Service): element is Service => {
@@ -16,6 +21,9 @@ const isElement = (element: Element | Service): element is Element => {
 };
 
 export const ElementDetails: React.FC<ElementDetailsProps> = ({ element }) => {
+  const warningCount = element.warn || 0;
+  const errorCount = element.error || 0;
+
   if (!element) {
     return (
       <Paper elevation={3} sx={{ p: 2, m: 2 }}>
@@ -32,9 +40,15 @@ export const ElementDetails: React.FC<ElementDetailsProps> = ({ element }) => {
       transition={{ duration: 0.3 }}
     >
       <Paper elevation={3} sx={{ p: 2, m: 2 }}>
-        <Typography variant="h6" gutterBottom>
-          {isElement(element) && element.name ? element.name : isService(element) ? element.service : 'Unnamed Element'}
-        </Typography>
+        <div className="element-header">
+          <Typography variant="h6" gutterBottom>
+            {isElement(element) && element.name ? element.name : isService(element) ? element.service : 'Unnamed Element'}
+          </Typography>
+          <div className="element-badges">
+            {warningCount > 0 && <Badge type="warning" count={warningCount} />}
+            {errorCount > 0 && <Badge type="error" count={errorCount} />}
+          </div>
+        </div>
         
         <Typography variant="subtitle1" color="text.secondary" gutterBottom>
           Type: {isService(element) ? element.service : element.type}
@@ -101,4 +115,6 @@ export const ElementDetails: React.FC<ElementDetailsProps> = ({ element }) => {
       </Paper>
     </motion.div>
   );
-}; 
+};
+
+export default ElementDetails; 

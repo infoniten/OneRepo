@@ -32,9 +32,12 @@ integration:
       namespace: testNamespace
       subType: kafka-to-rest
       someParameter: testValue
+      warn: 30
+      error: 40
       services:
       - service: quarkus
         subType: kafka-to-rest
+        warn: 30
         configs:
           topicName: DELTA.TOPIC.EVENT.V1
           kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
@@ -69,7 +72,7 @@ integration:
         port: 8080
         url: https://nginx.host.local/api
       id: 1
-      clusterName: cluster-1
+      clusterName: MegaSos-1
       next: 4
   - segment: omega
     elements:

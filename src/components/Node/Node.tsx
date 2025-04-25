@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Paper, Typography, Box } from '@mui/material';
 import { Element, Service } from '../../types/integration';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import Badge from '../Badge/Badge';
+import './Node.css';
 
 interface NodeProps {
   element: Element | Service;
@@ -31,6 +33,9 @@ const Node: React.FC<NodeProps> = ({ element, isSelected, onClick, showArrow = t
   const type = isService ? element.service : element.type;
   const name = isService ? element.service : element.name;
   const nodeColor = getNodeColor(type);
+
+  const warningCount = element.warn || 0;
+  const errorCount = element.error || 0;
 
   return (
     <Box sx={{ 
@@ -82,6 +87,10 @@ const Node: React.FC<NodeProps> = ({ element, isSelected, onClick, showArrow = t
           >
             {type}
           </Typography>
+          <div className="node-badges">
+            {warningCount > 0 && <Badge type="warning" count={warningCount} />}
+            {errorCount > 0 && <Badge type="error" count={errorCount} />}
+          </div>
         </Paper>
       </motion.div>
       {showArrow && (

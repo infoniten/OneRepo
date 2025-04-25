@@ -32,12 +32,9 @@ integration:
       namespace: testNamespace
       subType: kafka-to-rest
       someParameter: testValue
-      warn: 30
-      error: 40
       services:
       - service: quarkus
         subType: kafka-to-rest
-        warn: 30
         configs:
           topicName: DELTA.TOPIC.EVENT.V1
           kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093

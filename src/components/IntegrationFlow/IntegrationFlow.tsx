@@ -329,22 +329,46 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
       return { serviceNodes: [], serviceEdges: [] };
     }
 
-    const nodes: Node[] = data.services.map(service => ({
-      id: service.id.toString(),
-      type: 'service',
-      position: { x: 0, y: 0 },
-      data: {
-        label: service.service,
-        subType: service.subType,
-        warn: service.warn,
-        error: service.error,
-        selected: service.id.toString() === data.selectedElementId?.toString(),
-        onClick: () => data.onServiceClick(service.id),
-      },
-      style: {
-        zIndex: service.id.toString() === data.selectedElementId?.toString() ? 1 : 0,
-      },
-    }));
+    // Создаем узлы с базовыми размерами
+    const nodes: Node[] = data.services.map(service => {
+      // Рассчитываем примерную ширину текста (примерно 8px на символ)
+      const labelWidth = service.service.length * 8;
+      const subTypeWidth = (service.subType?.length || 7) * 8; // 7 символов для 'service' по умолчанию
+      
+      // Определяем минимальную необходимую ширину узла
+      const minWidth = Math.max(
+        140, // Минимальная ширина для удобства
+        labelWidth + 32, // Добавляем отступы
+        subTypeWidth + 32
+      );
+
+      // Определяем высоту на основе контента
+      const minHeight = Math.max(
+        70, // Минимальная высота
+        (service.error || service.warn ? 90 : 70) // Увеличиваем если есть бейджи
+      );
+
+      return {
+        id: service.id.toString(),
+        type: 'service',
+        position: { x: 0, y: 0 },
+        data: {
+          label: service.service,
+          subType: service.subType,
+          warn: service.warn,
+          error: service.error,
+          selected: service.id.toString() === data.selectedElementId?.toString(),
+          onClick: () => data.onServiceClick(service.id),
+          width: minWidth,
+          height: minHeight
+        },
+        style: {
+          width: minWidth,
+          height: minHeight,
+          zIndex: service.id.toString() === data.selectedElementId?.toString() ? 1 : 0,
+        },
+      };
+    });
 
     const edges: Edge[] = data.services
       .filter(service => service.next)
@@ -370,7 +394,7 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: edgeStyle.color,
-            width: edgeStyle.width * 4,    // Увеличиваем размер стрелки пропорционально толщине линии
+            width: edgeStyle.width * 4,
             height: edgeStyle.width * 4,
           },
           sourceHandle: 'source',
@@ -379,32 +403,46 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
       })
       .flat();
 
-    // Используем dagre для расчета позиций
+    // Находим максимальные размеры узлов
+    const maxNodeWidth = Math.max(...nodes.map(node => (node.data.width || 140)));
+    const maxNodeHeight = Math.max(...nodes.map(node => (node.data.height || 70)));
+
+    // Настраиваем граф с динамическими отступами
     const dagreGraph = new dagre.graphlib.Graph();
     dagreGraph.setDefaultEdgeLabel(() => ({}));
     dagreGraph.setGraph({
       rankdir: 'LR',
       align: 'UL',
-      nodesep: 80,
-      ranksep: 120,
-      marginx: 30,
-      marginy: 30,
+      nodesep: Math.max(30, maxNodeHeight * 0.4), // Расстояние между узлами зависит от их высоты
+      ranksep: Math.max(50, maxNodeWidth * 0.6), // Расстояние между рангами зависит от их ширины
+      marginx: Math.max(20, maxNodeWidth * 0.2), // Отступы зависят от размеров узлов
+      marginy: Math.max(20, maxNodeHeight * 0.2),
+      acyclicer: 'greedy',
+      ranker: 'tight-tree'
     });
 
-    // Добавляем узлы в граф
+    // Добавляем узлы в граф с их реальными размерами
     nodes.forEach(node => {
-      dagreGraph.setNode(node.id, { width: 200, height: 100 });
+      dagreGraph.setNode(node.id, {
+        width: node.data.width,
+        height: node.data.height,
+        paddingLeft: 10,
+        paddingRight: 10,
+        paddingTop: 10,
+        paddingBottom: 10
+      });
     });
 
-    // Добавляем рёбра
+    // Добавляем рёбра с весами
     edges.forEach(edge => {
-      dagreGraph.setEdge(edge.source, edge.target);
+      dagreGraph.setEdge(edge.source, edge.target, {
+        weight: 1,
+        minlen: 1 // Уменьшаем минимальную длину ребра
+      });
     });
 
-    // Выполняем layout
     dagre.layout(dagreGraph);
 
-    // Обновляем позиции узлов
     const layoutedNodes = nodes.map(node => {
       const nodeWithPosition = dagreGraph.node(node.id);
       return {
@@ -412,7 +450,7 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
         position: {
           x: nodeWithPosition.x - nodeWithPosition.width / 2,
           y: nodeWithPosition.y - nodeWithPosition.height / 2,
-        },
+        }
       };
     });
 
@@ -672,7 +710,7 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
   );
 };
 
-// Модифицируем ServiceNode для сервисов внутри k8s
+// Обновляем ServiceNode для использования динамических размеров
 const ServiceNode = ({ data }: NodeProps) => {
   const borderStyle = getBorderStyle(data.error, data.warn);
   
@@ -683,12 +721,17 @@ const ServiceNode = ({ data }: NodeProps) => {
         borderRadius: '8px',
         border: `${borderStyle.width}px solid ${borderStyle.color}`,
         backgroundColor: data.selected ? '#e3f2fd' : 'white',
-        minWidth: '180px',
+        width: data.width || '140px',
+        height: data.height || '70px',
         cursor: 'pointer',
         position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
         '&:hover': {
           backgroundColor: '#e3f2fd',
           boxShadow: `0 4px 8px ${borderStyle.color}33`,
+          transform: 'translateY(-2px)',
         },
         transition: 'all 0.2s ease',
       }}
@@ -938,11 +981,11 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
   
   dagreGraph.setGraph({ 
     rankdir: direction,
-    nodesep: 100,  // Уменьшенное расстояние между узлами по горизонтали
-    ranksep: 125,  // Уменьшенное расстояние между рангами
-    edgesep: 40,   // Расстояние между рёбрами
-    marginx: 25,   // Отступы от краёв
-    marginy: 25,   // Отступы от краёв
+    nodesep: 100,  // Возвращаем прежнее расстояние между узлами по горизонтали
+    ranksep: 125,  // Возвращаем прежнее расстояние между рангами
+    edgesep: 40,   // Возвращаем прежнее расстояние между рёбрами
+    marginx: 25,   // Возвращаем прежние отступы от краёв
+    marginy: 25,   // Возвращаем прежние отступы от краёв
     acyclicer: 'greedy',     // Добавляем для лучшей обработки циклов
     ranker: 'network-simplex' // Улучшаем расположение узлов
   });
@@ -993,7 +1036,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
       position: {
         x: nodeWithPosition.x - width / 2,
         y: nodeWithPosition.y - height / 2
-      },
+      }
     };
   });
 

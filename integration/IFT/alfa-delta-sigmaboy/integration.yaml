@@ -17,6 +17,12 @@ integration:
           - describe
           group:
           - producers
+        - principal: CN=Producer2, OUI=Test
+          operations:
+          - read
+          - describe
+          group:
+          - producers 
       id: 0
       connectionInfo:
         host: node0.host.local

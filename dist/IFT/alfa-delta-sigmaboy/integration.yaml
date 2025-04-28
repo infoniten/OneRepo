@@ -8,7 +8,7 @@ integration:
       partitions: 10
       configuration:
         max.message.bytes: 4194304
-        retention.ms: 432000000
+        retention.ms: 232000000
       security:
         principals:
         - principal: CN=Producer, OUI=Test

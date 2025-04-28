@@ -48,8 +48,15 @@ const KafkaSection = ({ element }: { element: Element }) => {
             secondary={element.partitions}
           />
         </ListItem>
-        {element.configuration && (
-          <>
+      </List>
+
+      {element.configuration && Object.keys(element.configuration).length > 0 && (
+        <>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+            Конфигурация
+          </Typography>
+          <List dense>
             <ListItem>
               <ListItemText
                 primary="Max Message Size"
@@ -62,9 +69,9 @@ const KafkaSection = ({ element }: { element: Element }) => {
                 secondary={element.configuration?.['retention.ms'] ? formatRetentionMs(element.configuration['retention.ms']) : '-'}
               />
             </ListItem>
-          </>
-        )}
-      </List>
+          </List>
+        </>
+      )}
 
       {element.security && (
         <>

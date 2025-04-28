@@ -12,7 +12,6 @@ import ReactFlow, {
   BackgroundVariant,
   ReactFlowProvider,
   useViewport,
-  Panel,
   useReactFlow,
   MarkerType,
   ReactFlowInstance,
@@ -86,24 +85,6 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
   const errorCount = data.element?.error || 0;
   const isSelected = flowSelected || data.selected;
 
-  const getAnimation = () => {
-    if (errorCount > 0) return 'borderPulseError 1s cubic-bezier(0.25, 0.1, 0.25, 1) infinite';
-    if (warningCount > 0) return 'borderPulseWarning 2.5s cubic-bezier(0.25, 0.1, 0.25, 1) infinite';
-    return 'none';
-  };
-
-  const getPulseColor = () => {
-    if (errorCount > 0) return 'rgba(239, 83, 80, 0.5)';
-    if (warningCount > 0) return 'rgba(255, 167, 38, 0.5)';
-    return 'transparent';
-  };
-
-  const getPulseAnimation = () => {
-    if (errorCount > 0) return 'pulseError 1s cubic-bezier(0.4, 0, 0.6, 1) infinite';
-    if (warningCount > 0) return 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite';
-    return 'none';
-  };
-
   const getNodeColor = (type: string): string => {
     switch (type.toLowerCase()) {
       case 'kafka':
@@ -116,16 +97,6 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
         return '#9C27B0';
       default:
         return '#607D8B';
-    }
-  };
-
-  const isSelected = flowSelected || data.selected;
-
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Предотвращаем всплытие события
-    console.log('CustomNode clicked, data:', data);
-    if (data.onElementClick && data.id !== undefined) {
-      data.onElementClick(data.id);
     }
   };
 
@@ -162,7 +133,11 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
           display: 'flex',
           flexDirection: 'column',
           gap: '8px',
-          animation: getAnimation(),
+          animation: errorCount > 0 
+            ? 'pulseError 0.7s cubic-bezier(0.4, 0, 0.6, 1) infinite' 
+            : warningCount > 0 
+              ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+              : 'none',
         }}
       >
         <Handle
@@ -251,94 +226,6 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
         />
       </motion.div>
     </Box>
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.8, opacity: 0 }}
-      transition={{
-        type: "spring",
-        stiffness: 260,
-        damping: 20,
-        duration: 0.3
-      }}
-      style={{
-        padding: '12px',
-        borderRadius: '12px',
-        border: `2px solid ${getNodeColor(data.type)}`,
-        background: isSelected ? '#f8f9fa' : 'white',
-        minWidth: '200px',
-        boxShadow: isSelected
-          ? `0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px ${getNodeColor(data.type)}22`
-          : '0 4px 8px rgba(0,0,0,0.05)',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        transform: isSelected ? 'translateY(-2px)' : 'none',
-        position: 'relative',
-        cursor: 'pointer',
-      }}
-      onClick={handleClick}
-    >
-      <Handle
-        type="target"
-        position={Position.Left}
-        isConnectable={isConnectable}
-        style={{
-          background: getNodeColor(data.type),
-          width: '12px',
-          height: '12px',
-          border: '2px solid white',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          left: '-7px',
-          boxShadow: `0 0 0 2px ${getNodeColor(data.type)}`,
-          transition: 'all 0.2s ease',
-          opacity: 0.8
-        }}
-      />
-      <div>
-        <Typography
-          variant="subtitle2"
-          sx={{
-            fontWeight: 600,
-            color: getNodeColor(data.type),
-            fontSize: '1.1rem',
-            mb: 0.5,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-          }}
-        >
-          {data.label}
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            color: 'text.secondary',
-            display: 'block',
-            fontSize: '0.875rem',
-            opacity: 0.8,
-          }}
-        >
-          {data.type}
-        </Typography>
-      </div>
-      <Handle
-        type="source"
-        position={Position.Right}
-        isConnectable={isConnectable}
-        style={{
-          background: getNodeColor(data.type),
-          width: '12px',
-          height: '12px',
-          border: '2px solid white',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          right: '-7px',
-          boxShadow: `0 0 0 2px ${getNodeColor(data.type)}`,
-          transition: 'all 0.2s ease',
-          opacity: 0.8
-        }}
-      />
-    </motion.div>
   );
 };
 
@@ -449,12 +336,6 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
   const errorCount = element?.error || 0;
   const borderStyle = getBorderStyle(errorCount, warningCount);
   const isSelected = flowSelected || data.selected;
-
-  const getAnimation = () => {
-    if (errorCount > 0) return 'borderPulseError 1s cubic-bezier(0.25, 0.1, 0.25, 1) infinite';
-    if (warningCount > 0) return 'borderPulseWarning 2.5s cubic-bezier(0.25, 0.1, 0.25, 1) infinite';
-    return 'none';
-  };
 
   const handleZoomIn = React.useCallback(() => {
     if (reactFlowInstanceRef.current) {
@@ -649,7 +530,11 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           transform: isSelected ? 'translateY(-2px)' : 'none',
           position: 'relative',
-          animation: getAnimation(),
+          animation: errorCount > 0 
+            ? 'pulseError 0.7s cubic-bezier(0.4, 0, 0.6, 1) infinite' 
+            : warningCount > 0 
+              ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+              : 'none',
         }}
       >
         <Handle
@@ -883,12 +768,6 @@ const ServiceNode = ({ data }: NodeProps) => {
   const warningCount = data.warn || 0;
   const errorCount = data.error || 0;
 
-  const getAnimation = () => {
-    if (errorCount > 0) return 'borderPulseError 1s cubic-bezier(0.25, 0.1, 0.25, 1) infinite';
-    if (warningCount > 0) return 'borderPulseWarning 2.5s cubic-bezier(0.25, 0.1, 0.25, 1) infinite';
-    return 'none';
-  };
-
   return (
     <Box
       sx={{
@@ -910,7 +789,11 @@ const ServiceNode = ({ data }: NodeProps) => {
           transform: 'translateY(-2px)',
         },
         transition: 'all 0.2s ease',
-        animation: getAnimation(),
+        animation: errorCount > 0
+          ? 'pulseError 0.7s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+          : warningCount > 0
+            ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            : 'none',
         boxShadow: errorCount > 0
           ? '0 4px 25px rgba(239, 83, 80, 0.35)'
           : warningCount > 0
@@ -1485,7 +1368,7 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
       console.log('Node clicked:', node);
-      if (onElementClick && node.data?.id) {
+      if (onElementClick && node.data?.id !== undefined && node.data?.id !== null) {
         onElementClick(node.data.id);
       }
     },
@@ -1497,47 +1380,31 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
       height: '100%',
       width: '100%',
       position: 'relative',
-      '@keyframes borderPulseError': {
+      '@keyframes pulseError': {
         '0%': {
-          boxShadow: '0 0 0 0 rgba(239, 83, 80, 0.9), 0 0 0 0 rgba(239, 83, 80, 0.9)',
+          boxShadow: '0 0 0 0 rgba(239, 83, 80, 0.7), 0 0 0 0 rgba(239, 83, 80, 0.7)',
           borderColor: 'rgba(239, 83, 80, 1)',
-        },
-        '25%': {
-          boxShadow: '0 0 0 20px rgba(239, 83, 80, 0), 0 0 0 0 rgba(239, 83, 80, 0.9)',
-          borderColor: 'rgba(239, 83, 80, 0.8)',
         },
         '50%': {
-          boxShadow: '0 0 0 20px rgba(239, 83, 80, 0), 0 0 10px 0 rgba(239, 83, 80, 0)',
-          borderColor: 'rgba(239, 83, 80, 1)',
-        },
-        '75%': {
-          boxShadow: '0 0 0 0 rgba(239, 83, 80, 0), 0 0 20px rgba(239, 83, 80, 0)',
+          boxShadow: '0 0 0 15px rgba(239, 83, 80, 0), 0 0 0 15px rgba(239, 83, 80, 0)',
           borderColor: 'rgba(239, 83, 80, 0.8)',
         },
         '100%': {
-          boxShadow: '0 0 0 0 rgba(239, 83, 80, 0), 0 0 0 20px rgba(239, 83, 80, 0)',
+          boxShadow: '0 0 0 0 rgba(239, 83, 80, 0), 0 0 0 0 rgba(239, 83, 80, 0)',
           borderColor: 'rgba(239, 83, 80, 1)',
         },
       },
-      '@keyframes borderPulseWarning': {
+      '@keyframes pulse': {
         '0%': {
-          boxShadow: '0 0 0 0 rgba(255, 167, 38, 0.8), 0 0 0 0 rgba(255, 167, 38, 0.8)',
+          boxShadow: '0 0 0 0 rgba(255, 167, 38, 0.7), 0 0 0 0 rgba(255, 167, 38, 0.7)',
           borderColor: 'rgba(255, 167, 38, 1)',
-        },
-        '25%': {
-          boxShadow: '0 0 0 20px rgba(255, 167, 38, 0), 0 0 0 0 rgba(255, 167, 38, 0.8)',
-          borderColor: 'rgba(255, 167, 38, 0.7)',
         },
         '50%': {
-          boxShadow: '0 0 0 20px rgba(255, 167, 38, 0), 0 0 10px 0 rgba(255, 167, 38, 0)',
-          borderColor: 'rgba(255, 167, 38, 1)',
-        },
-        '75%': {
-          boxShadow: '0 0 0 0 rgba(255, 167, 38, 0), 0 0 20px rgba(255, 167, 38, 0)',
-          borderColor: 'rgba(255, 167, 38, 0.7)',
+          boxShadow: '0 0 0 15px rgba(255, 167, 38, 0), 0 0 0 15px rgba(255, 167, 38, 0)',
+          borderColor: 'rgba(255, 167, 38, 0.8)',
         },
         '100%': {
-          boxShadow: '0 0 0 0 rgba(255, 167, 38, 0), 0 0 0 20px rgba(255, 167, 38, 0)',
+          boxShadow: '0 0 0 0 rgba(255, 167, 38, 0), 0 0 0 0 rgba(255, 167, 38, 0)',
           borderColor: 'rgba(255, 167, 38, 1)',
         },
       },

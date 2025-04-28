@@ -123,8 +123,10 @@ integration:
       namespace: sigmaBoy-3
       clusterName: sigmaBoy-3
       next: [10,88]
+      warn: 10
       services:
       - service: murex-signed-signed-trades-gmsb-sowa-out
+        warn: 10
         subType: kafka-to-rest
         configs:
           topicName: DELTA.TOPIC.EVENT.V1
@@ -142,6 +144,7 @@ integration:
         id: 8
         next: 9
       - service: egress
+        error: 10
         connectionInfo:
           host: node3.host.local
           port: 3000
@@ -182,6 +185,7 @@ integration:
       id: 10
       next: [11,13]
     - type: nginx
+      error: 10
       requestType: post
       requestSchemaValidation: ../requestSchema.xsd
       responseSchemaValidation: ../responseSchema.xsd

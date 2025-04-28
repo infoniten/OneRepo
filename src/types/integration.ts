@@ -64,6 +64,12 @@ export interface Element {
   clusterName?: string;
   warn?: number;
   error?: number;
+  partitions?: number;
+  configuration?: {
+    max_message_bytes?: number;
+    retention_ms?: number;
+    [key: string]: any;
+  };
 }
 
 export interface Segment {
@@ -95,4 +101,4 @@ export interface ValidationIssue {
 export interface ElementWithIssues {
   warnings: ValidationIssue[];
   errors: ValidationIssue[];
-} 
+}

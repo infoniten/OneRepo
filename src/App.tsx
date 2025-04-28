@@ -91,17 +91,28 @@ function App() {
   }, []);
 
   const handleElementClick = useCallback((elementId: string | number) => {
+    console.log('Element clicked:', elementId);
     let element: Element | Service | null = null;
+    
+    // Преобразуем elementId в число для сравнения
+    const targetId = typeof elementId === 'string' ? parseInt(elementId, 10) : elementId;
     
     selectedIntegration?.segments.forEach(segment => {
       segment.elements.forEach(el => {
-        if (el.id === elementId) {
+        // Преобразуем id элемента в число для сравнения
+        const elId = typeof el.id === 'string' ? parseInt(el.id, 10) : el.id;
+        
+        if (elId === targetId) {
+          console.log('Found matching element:', el);
           element = el;
         }
+        
         // Проверяем, является ли элемент типом Element и имеет ли services
         if ('services' in el && el.services) {
           el.services.forEach((service: Service) => {
-            if (service.id === elementId) {
+            const serviceId = typeof service.id === 'string' ? parseInt(service.id, 10) : service.id;
+            if (serviceId === targetId) {
+              console.log('Found matching service:', service);
               element = service;
             }
           });
@@ -109,6 +120,7 @@ function App() {
       });
     });
 
+    console.log('Setting selected element:', element);
     setSelectedElement(element);
     setIsModalOpen(true);
   }, [selectedIntegration]);

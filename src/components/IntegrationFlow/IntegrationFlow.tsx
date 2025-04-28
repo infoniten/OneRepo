@@ -12,6 +12,7 @@ import ReactFlow, {
   BackgroundVariant,
   ReactFlowProvider,
   useViewport,
+  Panel,
   useReactFlow,
   MarkerType,
   ReactFlowInstance,
@@ -60,18 +61,18 @@ interface ErrorWarningElement {
 // Добавим функцию для определения стиля границы
 const getBorderStyle = (error?: number, warn?: number): { color: string; width: number } => {
   if (error && error > 0) {
-    return { 
+    return {
       color: '#ef5350',   // красный для ошибок
       width: 3            // увеличенная толщина для ошибок
     };
   }
   if (warn && warn > 0) {
-    return { 
+    return {
       color: '#ffa726',   // оранжевый для предупреждений
       width: 3            // увеличенная толщина для предупреждений
     };
   }
-  return { 
+  return {
     color: '#2196F3',     // синий по умолчанию
     width: 2              // стандартная толщина
   };
@@ -118,17 +119,27 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
     }
   };
 
+  const isSelected = flowSelected || data.selected;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Предотвращаем всплытие события
+    console.log('CustomNode clicked, data:', data);
+    if (data.onElementClick && data.id !== undefined) {
+      data.onElementClick(data.id);
+    }
+  };
+
   return (
     <Box sx={{ position: 'relative' }}>
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.8, opacity: 0 }}
-        transition={{ 
+        transition={{
           type: "spring",
           stiffness: 260,
           damping: 20,
-          duration: 0.3 
+          duration: 0.3
         }}
         style={{
           padding: '12px',
@@ -138,8 +149,8 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
           background: isSelected ? '#f8f9fa' : 'white',
           width: '100%',
           minWidth: isKafka ? '240px' : '180px',
-          boxShadow: isSelected 
-            ? `0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px ${borderStyle.color}22` 
+          boxShadow: isSelected
+            ? `0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px ${borderStyle.color}22`
             : errorCount > 0
               ? '0 4px 25px rgba(239, 83, 80, 0.35)'
               : warningCount > 0
@@ -154,11 +165,11 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
           animation: getAnimation(),
         }}
       >
-        <Handle 
-          type="target" 
-          position={Position.Left} 
+        <Handle
+          type="target"
+          position={Position.Left}
           isConnectable={isConnectable}
-          style={{ 
+          style={{
             background: getNodeColor(data.type),
             width: '12px',
             height: '12px',
@@ -171,7 +182,7 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
             opacity: 0.8
           }}
         />
-        <div style={{ 
+        <div style={{
           overflow: 'hidden',
           width: '100%',
           padding: '0 4px'
@@ -211,9 +222,9 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
           </Typography>
         </div>
         {(warningCount > 0 || errorCount > 0) && (
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 1, 
+          <Box sx={{
+            display: 'flex',
+            gap: 1,
             justifyContent: isKafka ? 'flex-start' : 'center',
             mt: 'auto'
           }}>
@@ -221,11 +232,11 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
             {errorCount > 0 && <Badge type="error" count={errorCount} />}
           </Box>
         )}
-        <Handle 
-          type="source" 
-          position={Position.Right} 
+        <Handle
+          type="source"
+          position={Position.Right}
           isConnectable={isConnectable}
-          style={{ 
+          style={{
             background: getNodeColor(data.type),
             width: '12px',
             height: '12px',
@@ -240,6 +251,94 @@ const CustomNode = ({ data, isConnectable, selected: flowSelected }: NodeProps) 
         />
       </motion.div>
     </Box>
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.8, opacity: 0 }}
+      transition={{
+        type: "spring",
+        stiffness: 260,
+        damping: 20,
+        duration: 0.3
+      }}
+      style={{
+        padding: '12px',
+        borderRadius: '12px',
+        border: `2px solid ${getNodeColor(data.type)}`,
+        background: isSelected ? '#f8f9fa' : 'white',
+        minWidth: '200px',
+        boxShadow: isSelected
+          ? `0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px ${getNodeColor(data.type)}22`
+          : '0 4px 8px rgba(0,0,0,0.05)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transform: isSelected ? 'translateY(-2px)' : 'none',
+        position: 'relative',
+        cursor: 'pointer',
+      }}
+      onClick={handleClick}
+    >
+      <Handle
+        type="target"
+        position={Position.Left}
+        isConnectable={isConnectable}
+        style={{
+          background: getNodeColor(data.type),
+          width: '12px',
+          height: '12px',
+          border: '2px solid white',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          left: '-7px',
+          boxShadow: `0 0 0 2px ${getNodeColor(data.type)}`,
+          transition: 'all 0.2s ease',
+          opacity: 0.8
+        }}
+      />
+      <div>
+        <Typography
+          variant="subtitle2"
+          sx={{
+            fontWeight: 600,
+            color: getNodeColor(data.type),
+            fontSize: '1.1rem',
+            mb: 0.5,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          {data.label}
+        </Typography>
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary',
+            display: 'block',
+            fontSize: '0.875rem',
+            opacity: 0.8,
+          }}
+        >
+          {data.type}
+        </Typography>
+      </div>
+      <Handle
+        type="source"
+        position={Position.Right}
+        isConnectable={isConnectable}
+        style={{
+          background: getNodeColor(data.type),
+          width: '12px',
+          height: '12px',
+          border: '2px solid white',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          right: '-7px',
+          boxShadow: `0 0 0 2px ${getNodeColor(data.type)}`,
+          transition: 'all 0.2s ease',
+          opacity: 0.8
+        }}
+      />
+    </motion.div>
   );
 };
 
@@ -279,7 +378,7 @@ const hasErrorInChain = (
 
   // Проверяем ошибки в текущем элементе
   if (element.error && element.error > 0) return true;
-  
+
   // Проверяем ошибки в сервисах текущего элемента
   if (element.services?.some(service => service.error && service.error > 0)) return true;
 
@@ -306,7 +405,7 @@ const hasWarningInChain = (
 
   // Проверяем предупреждения в текущем элементе
   if (element.warn && element.warn > 0) return true;
-  
+
   // Проверяем предупреждения в сервисах текущего элемента
   if (element.services?.some(service => service.warn && service.warn > 0)) return true;
 
@@ -325,18 +424,18 @@ const getEdgeStyle = (
   elements: ErrorWarningElement[],
 ): { color: string; width: number } => {
   if (hasErrorInChain(sourceId, elements)) {
-    return { 
+    return {
       color: '#ef5350',   // красный для ошибок
       width: 3            // увеличенная толщина для ошибок
     };
   }
   if (hasWarningInChain(sourceId, elements)) {
-    return { 
+    return {
       color: '#ffa726',   // оранжевый для предупреждений
       width: 3            // увеличенная толщина для предупреждений
     };
   }
-  return { 
+  return {
     color: '#2196F3',     // синий по умолчанию
     width: 2              // стандартная толщина
   };
@@ -394,7 +493,7 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
       // Рассчитываем примерную ширину текста (примерно 8px на символ)
       const labelWidth = service.service.length * 8;
       const subTypeWidth = (service.subType?.length || 7) * 8; // 7 символов для 'service' по умолчанию
-      
+
       // Определяем минимальную необходимую ширину узла
       const minWidth = Math.max(
         140, // Минимальная ширина для удобства
@@ -439,7 +538,7 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
           services: []
         }));
         const edgeStyle = getEdgeStyle(service.id, servicesAsElements);
-        
+
         return nextIds.filter((id): id is number => id !== undefined).map(nextId => ({
           id: `e${service.id}-${nextId}`,
           source: service.id.toString(),
@@ -447,7 +546,7 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
           type: 'smoothstep',
           animated: true,
           style: { 
-            stroke: edgeStyle.color, 
+            stroke: edgeStyle.color,
             strokeWidth: edgeStyle.width,
             opacity: 0.8,
           },
@@ -526,11 +625,11 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.8, opacity: 0 }}
-        transition={{ 
+        transition={{
           type: "spring",
           stiffness: 260,
           damping: 20,
-          duration: 0.3 
+          duration: 0.3
         }}
         style={{
           padding: '16px',
@@ -540,8 +639,8 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
           background: isSelected ? '#f8f9fa' : 'white',
           width: '400px',
           height: '300px',
-          boxShadow: isSelected 
-            ? `0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px ${borderStyle.color}22` 
+          boxShadow: isSelected
+            ? `0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px ${borderStyle.color}22`
             : errorCount > 0
               ? '0 4px 25px rgba(239, 83, 80, 0.35)'
               : warningCount > 0
@@ -553,12 +652,12 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
           animation: getAnimation(),
         }}
       >
-        <Handle 
-          type="target" 
-          position={Position.Left} 
+        <Handle
+          type="target"
+          position={Position.Left}
           id="left"
           isConnectable={isConnectable}
-          style={{ 
+          style={{
             background: borderStyle.color,
             width: '12px',
             height: '12px',
@@ -735,8 +834,8 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
                   defaultEdgeOptions={{
                     type: 'smoothstep',
                     animated: true,
-                    style: { 
-                      stroke: '#2196F3', 
+                    style: {
+                      stroke: '#2196F3',
                       strokeWidth: 2,
                       opacity: 0.8,
                     },
@@ -754,12 +853,12 @@ const K8sNode = ({ data, isConnectable, selected: flowSelected }: NodeProps<K8sN
             </ReactFlowProvider>
           </Box>
         </div>
-        <Handle 
-          type="source" 
-          position={Position.Right} 
+        <Handle
+          type="source"
+          position={Position.Right}
           id="right"
           isConnectable={isConnectable}
-          style={{ 
+          style={{
             background: borderStyle.color,
             width: '12px',
             height: '12px',
@@ -789,7 +888,7 @@ const ServiceNode = ({ data }: NodeProps) => {
     if (warningCount > 0) return 'borderPulseWarning 2.5s cubic-bezier(0.25, 0.1, 0.25, 1) infinite';
     return 'none';
   };
-  
+
   return (
     <Box
       sx={{
@@ -1079,7 +1178,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
     return null;
   }).filter(Boolean);
 
-  dagreGraph.setGraph({ 
+  dagreGraph.setGraph({
     rankdir: direction,
     nodesep: 100,
     ranksep: 125,
@@ -1132,7 +1231,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
   edges.forEach((edge) => {
     const sourceNode = nodes.find(n => n.id === edge.source);
     const minlen = sourceNode?.data?.type?.toLowerCase() === 'kafka' ? 2 : 1;
-    
+
     dagreGraph.setEdge(edge.source, edge.target, {
       minlen,
       weight: 1
@@ -1276,11 +1375,13 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
       segment.elements.forEach((element: Element) => {
         if (!element.type) return;
 
+        const elementId = typeof element.id === 'number' ? element.id : parseInt(element.id.toString(), 10);
         const elementNode = {
-          id: element.id.toString(),
+          id: elementId.toString(),
           type: element.type.toLowerCase() === 'k8s' ? 'k8s' : 'custom',
           position: { x: 0, y: 0 },
           data: { 
+            id: elementId,
             label: element.name || element.type,
             type: element.type,
             element: element,
@@ -1290,7 +1391,8 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
               error: service.error || 0
             })) || [],
             onServiceClick: onElementClick,
-            selected: element.id.toString() === selectedElementId?.toString(),
+            onElementClick: onElementClick,
+            selected: elementId.toString() === selectedElementId?.toString(),
             selectedElementId,
           },
           sourcePosition: Position.Right,
@@ -1314,7 +1416,7 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
             }))
           }));
           const edgeStyle = getEdgeStyle(element.id, elementsForCheck);
-          
+
           nextIds.forEach(nextId => {
             edges.push({
               id: `e${nodeId++}`,
@@ -1382,17 +1484,18 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
 
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      if (onElementClick && node.id) {
-        onElementClick(node.id);
+      console.log('Node clicked:', node);
+      if (onElementClick && node.data?.id) {
+        onElementClick(node.data.id);
       }
     },
     [onElementClick]
   );
 
   return (
-    <Box sx={{ 
-      height: '100%', 
-      width: '100%', 
+    <Box sx={{
+      height: '100%',
+      width: '100%',
       position: 'relative',
       '@keyframes borderPulseError': {
         '0%': {
@@ -1530,7 +1633,7 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
               <Panel position="top-right">
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <Tooltip title="Уменьшить">
-                    <IconButton 
+                    <IconButton
                       onClick={() => zoomOut()}
                       sx={{
                         bgcolor: 'white',
@@ -1544,7 +1647,7 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Увеличить">
-                    <IconButton 
+                    <IconButton
                       onClick={() => zoomIn()}
                       sx={{
                         bgcolor: 'white',
@@ -1558,7 +1661,7 @@ export const IntegrationFlow: React.FC<IntegrationFlowProps> = React.memo(({
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="По центру">
-                    <IconButton 
+                    <IconButton
                       onClick={() => fitView()}
                       sx={{
                         bgcolor: 'white',

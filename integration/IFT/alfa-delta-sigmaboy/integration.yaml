@@ -1,360 +1,373 @@
 integration:
   name: kafka_chain_5_segments
   segments:
-  - segment: alpha
-    elements:
-    - type: kafka
-      name: ALPHA.TOPIC.IN.V1
-      partitions: 10
-      configuration:
-        max.message.bytes: 4194304
-        retention.ms: 232000000
-      security:
-        principals:
-        - principal: CN=Producer, OUI=Test
-          operations:
-          - write
-          - describe
-          group:
-          - producers
-        - principal: CN=Producer2, OUI=Test
-          operations:
-          - read
-          - describe
-          group:
-          - producers 
-      id: 0
-      connectionInfo:
-        host: node0.host.local
-        port: 8080
-        url: https://node0.host.local/api
-      next: [1, 27]
-    - type: k8s
-      namespace: alpha-ns
-      subType: kafka-to-rest
-      someParameter: value
-      services:
-      - service: quarkus
-        subType: kafka-to-rest
-        configs:
-          topicName: ALPHA.TOPIC.IN.V1
-          kafkaServers: kafka1:9092,kafka2:9092
-          restHost: alpha-host.local:443
-        id: 28
-        connectionInfo:
-          host: node2.host.local
-          port: 8080
-          url: https://node2.host.local/api
-        next: 29
-      - service: egress
-        id: 29
-        connectionInfo:
-          host: node3.host.local
-          port: 9092
-          url: https://node3.host.local/api
-        
-      id: 27
-      clusterName: MegaSos
-      connectionInfo:
-        host: node1.host.local
-        port: 8080
-        url: https://node1.host.local/api
-      next: 4
-    - type: k8s
-      namespace: alpha-ns
-      subType: kafka-to-rest
-      someParameter: value
-      services:
-      - service: quarkus
-        subType: kafka-to-rest
-        configs:
-          topicName: ALPHA.TOPIC.IN.V1
-          kafkaServers: kafka1:9092,kafka2:9092
-          restHost: alpha-host.local:443
-        id: 2
-        connectionInfo:
-          host: node2.host.local
-          port: 8080
-          url: https://node2.host.local/api
-        next: 3
-      - service: egress
-        id: 3
-        connectionInfo:
-          host: node3.host.local
-          port: 9092
-          url: https://node3.host.local/api
-        
-      id: 1
-      clusterName: Sosolkogo
-      connectionInfo:
-        host: node1.host.local
-        port: 8080
-        url: https://node1.host.local/api
-      next: 4  
-    - type: nginx
-      requestType: post
-      requestSchemaValidation: request.xsd
-      responseSchemaValidation: response.xsd
-      nginxPort: 443
-      modSecurityTurnedOffRules:
-      - modsec123
-      - modsec456
-      remoteHost: alpha-remote.local:443
-      id: 4
-      connectionInfo:
-        host: node4.host.local
-        port: 9092
-        url: https://node4.host.local/api
-      next: 5
-    
-  - segment: beta
-    elements:
-    - type: geo-load-balancer
-      hostname: alpha-geo
-      servers:
-      - host: alpha-srv1
-        port: 443
-      - host: alpha-srv2
-        port: 443
-      id: 5
-      connectionInfo:
-        host: node5.host.local
-        port: 443
-        url: https://node5.host.local/api
-      next: 6
-    - type: k8s
-      namespace: beta-ns
-      subType: kafka-to-rest
-      someParameter: value
-      services:
-      - service: quarkus
-        subType: kafka-to-rest
-        configs:
-          topicName: BETA.TOPIC.IN.V1
-          kafkaServers: kafka1:9092,kafka2:9092
-          restHost: beta-host.local:443
-        id: 7
-        connectionInfo:
-          host: node7.host.local
-          port: 9092
-          url: https://node7.host.local/api
-        next: 8
-      - service: egress
-        id: 8
-        connectionInfo:
-          host: node8.host.local
-          port: 80
-          url: https://node8.host.local/api
-        next: 9
-      id: 6
-      clusterName: cluster-2
-      connectionInfo:
-        host: node6.host.local
-        port: 3000
-        url: https://node6.host.local/api
-      next: 9
-    - type: nginx
-      requestType: post
-      requestSchemaValidation: request.xsd
-      responseSchemaValidation: response.xsd
-      nginxPort: 443
-      modSecurityTurnedOffRules:
-      - modsec123
-      - modsec456
-      remoteHost: beta-remote.local:443
-      id: 9
-      connectionInfo:
-        host: node9.host.local
-        port: 80
-        url: https://node9.host.local/api
-      next: 10
-    
-  - segment: gamma
-    elements:
-    - type: geo-load-balancer
-      hostname: beta-geo
-      servers:
-      - host: beta-srv1
-        port: 443
-      - host: beta-srv2
-        port: 443
-      id: 10
-      connectionInfo:
-        host: node10.host.local
-        port: 443
-        url: https://node10.host.local/api
-      next: 11
-    - type: k8s
-      namespace: gamma-ns
-      subType: kafka-to-rest
-      someParameter: value
-      services:
-      - service: quarkus
-        subType: kafka-to-rest
-        configs:
-          topicName: GAMMA.TOPIC.IN.V1
-          kafkaServers: kafka1:9092,kafka2:9092
-          restHost: gamma-host.local:443
-        id: 12
-        connectionInfo:
-          host: node12.host.local
-          port: 80
-          url: https://node12.host.local/api
-        next: 13
-      - service: egress
-        id: 13
-        connectionInfo:
-          host: node13.host.local
-          port: 9092
-          url: https://node13.host.local/api
-        next: 14
-      id: 11
-      clusterName: cluster-3
-      connectionInfo:
-        host: node11.host.local
-        port: 9092
-        url: https://node11.host.local/api
-      next: 14
-    - type: nginx
-      requestType: post
-      requestSchemaValidation: request.xsd
-      responseSchemaValidation: response.xsd
-      nginxPort: 443
-      modSecurityTurnedOffRules:
-      - modsec123
-      - modsec456
-      remoteHost: gamma-remote.local:443
-      id: 14
-      connectionInfo:
-        host: node14.host.local
-        port: 8080
-        url: https://node14.host.local/api
-      next: [15, 20]
-    
-  - segment: delta
-    elements:
-    - type: geo-load-balancer
-      hostname: gamma-geo
-      servers:
-      - host: gamma-srv1
-        port: 443
-      - host: gamma-srv2
-        port: 443
-      id: 15
-      connectionInfo:
-        host: node15.host.local
-        port: 3000
-        url: https://node15.host.local/api
-      next: 16
-    - type: k8s
-      namespace: delta-ns
-      subType: kafka-to-rest
-      someParameter: value
-      services:
-      - service: quarkus
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.IN.V1
-          kafkaServers: kafka1:9092,kafka2:9092
-          restHost: delta-host.local:443
-        id: 17
-        connectionInfo:
-          host: node17.host.local
-          port: 443
-          url: https://node17.host.local/api
-        next: 18
-      - service: egress
-        id: 18
-        connectionInfo:
-          host: node18.host.local
-          port: 9092
-          url: https://node18.host.local/api
-        next: 19
-      id: 16
-      clusterName: cluster-3
-      connectionInfo:
-        host: node16.host.local
-        port: 443
-        url: https://node16.host.local/api
-      next: 19
-    - type: nginx
-      requestType: post
-      requestSchemaValidation: request.xsd
-      responseSchemaValidation: response.xsd
-      nginxPort: 443
-      modSecurityTurnedOffRules:
-      - modsec123
-      - modsec456
-      remoteHost: delta-remote.local:443
-      id: 19
-      connectionInfo:
-        host: node19.host.local
-        port: 3000
-        url: https://node19.host.local/api
-    
-  - segment: omega
-    elements:
-    - type: geo-load-balancer
-      hostname: delta-geo
-      servers:
-      - host: delta-srv1
-        port: 443
-      - host: delta-srv2
-        port: 443
-      id: 20
-      connectionInfo:
-        host: node20.host.local
-        port: 3000
-        url: https://node20.host.local/api
-      next: 21
-    - type: k8s
-      namespace: omega-ns
-      subType: rest-to-kafka
-      someParameter: value
-      services:
-      - service: quarkus
-        subType: rest-to-kafka
-        configs:
-          topicName: OMEGA.TOPIC.IN.V1
-          kafkaServers: kafka1:9092,kafka2:9092
-          restHost: omega-host.local:443
-        id: 22
-        connectionInfo:
-          host: node22.host.local
-          port: 9092
-          url: https://node22.host.local/api
-        next: 23
-      - service: egress
-        id: 23
-        connectionInfo:
-          host: node23.host.local
-          port: 443
-          url: https://node23.host.local/api
-        next: 24
-      id: 21
-      clusterName: cluster-2
-      connectionInfo:
-        host: node21.host.local
-        port: 8080
-        url: https://node21.host.local/api
-      next: 24
-    
-    - type: kafka
-      name: OMEGA.TOPIC.OUT.V1
-      partitions: 10
-      configuration:
-        max.message.bytes: 4194304
-        retention.ms: 432000000
-      security:
-        principals:
-        - principal: CN=Consumer, OUI=Test
-          operations:
-          - read
-          - describe
-          group:
-          - consumers
-      id: 24
-      connectionInfo:
-        host: node26.host.local
-        port: 3000
-        url: https://node26.host.local/api
+    - segment: alpha
+      elements:
+        - type: kafka
+          name: ALPHA.TOPIC.IN.V1
+          partitions: 10
+          configuration:
+            max.message.bytes: 4194304
+            retention.ms: 232000000
+          security:
+            principals:
+              - principal: CN=Producer, OUI=Test
+                operations:
+                  - write
+                  - describe
+                group:
+                  - producers
+              - principal: CN=Producer2, OUI=Test
+                operations:
+                  - read
+                  - describe
+                group:
+                  - producers
+          id: 0
+          connectionInfo:
+            host: node0.host.local
+            port: 8080
+            url: https://node0.host.local/api
+          next:
+            - 1
+            - 27
+        - type: k8s
+          namespace: alpha-ns
+          subType: kafka-to-rest
+          someParameter: value
+          services:
+            - service: quarkus
+              subType: kafka-to-rest
+              configs:
+                topicName: ALPHA.TOPIC.IN.V1
+                kafkaServers: kafka1:9092,kafka2:9092
+                restHost: alpha-host.local:443
+              id: 28
+              connectionInfo:
+                host: node2.host.local
+                port: 8080
+                url: https://node2.host.local/api
+              next: 29
+            - service: egress
+              id: 29
+              connectionInfo:
+                host: node3.host.local
+                port: 9092
+                url: https://node3.host.local/api
+          id: 27
+          clusterName: MegaSos
+          connectionInfo:
+            host: node1.host.local
+            port: 8080
+            url: https://node1.host.local/api
+          next: 4
+        - type: k8s
+          namespace: alpha-ns
+          subType: kafka-to-rest
+          someParameter: value
+          services:
+            - service: quarkus
+              subType: kafka-to-rest
+              configs:
+                topicName: ALPHA.TOPIC.IN.V1
+                kafkaServers: kafka1:9092,kafka2:9092
+                restHost: alpha-host.local:443
+              id: 2
+              connectionInfo:
+                host: node2.host.local
+                port: 8080
+                url: https://node2.host.local/api
+              next: 3
+            - service: egress
+              id: 3
+              connectionInfo:
+                host: node3.host.local
+                port: 9092
+                url: https://node3.host.local/api
+          id: 1
+          clusterName: Sosolkogo
+          connectionInfo:
+            host: node1.host.local
+            port: 8080
+            url: https://node1.host.local/api
+          next: 4
+        - type: nginx
+          requestType:
+            - post
+          requestSchemaValidation: request.xsd
+          nginxPort: 443
+          modSecurityTurnedOffRules:
+            - modsec123
+            - modsec456
+          remoteHost: alpha-remote.local:443
+          id: 4
+          connectionInfo:
+            host: node4.host.local
+            port: 9092
+            url: https://node4.host.local/api
+          next: 5
+          responseSchemaValidation: |
+            <?xml version="1.0" encoding="UTF-8"?>
+            <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+              <xs:element name="trade">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="id" type="xs:string" />
+                    <xs:element name="symbol" type="xs:string" />
+                    <xs:element name="quantity" type="xs:int" />
+                    <xs:element name="price" type="xs:float" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+    - segment: beta
+      elements:
+        - type: geo-load-balancer
+          hostname: alpha-geo
+          servers:
+            - host: alpha-srv1
+              port: 443
+            - host: alpha-srv2
+              port: 443
+          id: 5
+          connectionInfo:
+            host: node5.host.local
+            port: 443
+            url: https://node5.host.local/api
+          next: 6
+        - type: k8s
+          namespace: beta-ns
+          subType: kafka-to-rest
+          someParameter: value
+          services:
+            - service: quarkus
+              subType: kafka-to-rest
+              configs:
+                topicName: BETA.TOPIC.IN.V1
+                kafkaServers: kafka1:9092,kafka2:9092
+                restHost: beta-host.local:443
+              id: 7
+              connectionInfo:
+                host: node7.host.local
+                port: 9092
+                url: https://node7.host.local/api
+              next: 8
+            - service: egress
+              id: 8
+              connectionInfo:
+                host: node8.host.local
+                port: 80
+                url: https://node8.host.local/api
+              next: 9
+          id: 6
+          clusterName: cluster-2
+          connectionInfo:
+            host: node6.host.local
+            port: 3000
+            url: https://node6.host.local/api
+          next: 9
+        - type: nginx
+          requestType: post
+          requestSchemaValidation: request.xsd
+          responseSchemaValidation: response.xsd
+          nginxPort: 443
+          modSecurityTurnedOffRules:
+            - modsec123
+            - modsec456
+          remoteHost: beta-remote.local:443
+          id: 9
+          connectionInfo:
+            host: node9.host.local
+            port: 80
+            url: https://node9.host.local/api
+          next: 10
+    - segment: gamma
+      elements:
+        - type: geo-load-balancer
+          hostname: beta-geo
+          servers:
+            - host: beta-srv1
+              port: 443
+            - host: beta-srv2
+              port: 443
+          id: 10
+          connectionInfo:
+            host: node10.host.local
+            port: 443
+            url: https://node10.host.local/api
+          next: 11
+        - type: k8s
+          namespace: gamma-ns
+          subType: kafka-to-rest
+          someParameter: value
+          services:
+            - service: quarkus
+              subType: kafka-to-rest
+              configs:
+                topicName: GAMMA.TOPIC.IN.V1
+                kafkaServers: kafka1:9092,kafka2:9092
+                restHost: gamma-host.local:443
+              id: 12
+              connectionInfo:
+                host: node12.host.local
+                port: 80
+                url: https://node12.host.local/api
+              next: 13
+            - service: egress
+              id: 13
+              connectionInfo:
+                host: node13.host.local
+                port: 9092
+                url: https://node13.host.local/api
+              next: 14
+          id: 11
+          clusterName: cluster-3
+          connectionInfo:
+            host: node11.host.local
+            port: 9092
+            url: https://node11.host.local/api
+          next: 14
+        - type: nginx
+          requestType: post
+          requestSchemaValidation: request.xsd
+          responseSchemaValidation: response.xsd
+          nginxPort: 443
+          modSecurityTurnedOffRules:
+            - modsec123
+            - modsec456
+          remoteHost: gamma-remote.local:443
+          id: 14
+          connectionInfo:
+            host: node14.host.local
+            port: 8080
+            url: https://node14.host.local/api
+          next:
+            - 15
+            - 20
+    - segment: delta
+      elements:
+        - type: geo-load-balancer
+          hostname: gamma-geo
+          servers:
+            - host: gamma-srv1
+              port: 443
+            - host: gamma-srv2
+              port: 443
+          id: 15
+          connectionInfo:
+            host: node15.host.local
+            port: 3000
+            url: https://node15.host.local/api
+          next: 16
+        - type: k8s
+          namespace: delta-ns
+          subType: kafka-to-rest
+          someParameter: value
+          services:
+            - service: quarkus
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.IN.V1
+                kafkaServers: kafka1:9092,kafka2:9092
+                restHost: delta-host.local:443
+              id: 17
+              connectionInfo:
+                host: node17.host.local
+                port: 443
+                url: https://node17.host.local/api
+              next: 18
+            - service: egress
+              id: 18
+              connectionInfo:
+                host: node18.host.local
+                port: 9092
+                url: https://node18.host.local/api
+              next: 19
+          id: 16
+          clusterName: cluster-3
+          connectionInfo:
+            host: node16.host.local
+            port: 443
+            url: https://node16.host.local/api
+          next: 19
+        - type: nginx
+          requestType: post
+          requestSchemaValidation: request.xsd
+          responseSchemaValidation: response.xsd
+          nginxPort: 443
+          modSecurityTurnedOffRules:
+            - modsec123
+            - modsec456
+          remoteHost: delta-remote.local:443
+          id: 19
+          connectionInfo:
+            host: node19.host.local
+            port: 3000
+            url: https://node19.host.local/api
+    - segment: omega
+      elements:
+        - type: geo-load-balancer
+          hostname: delta-geo
+          servers:
+            - host: delta-srv1
+              port: 443
+            - host: delta-srv2
+              port: 443
+          id: 20
+          connectionInfo:
+            host: node20.host.local
+            port: 3000
+            url: https://node20.host.local/api
+          next: 21
+        - type: k8s
+          namespace: omega-ns
+          subType: rest-to-kafka
+          someParameter: value
+          services:
+            - service: quarkus
+              subType: rest-to-kafka
+              configs:
+                topicName: OMEGA.TOPIC.IN.V1
+                kafkaServers: kafka1:9092,kafka2:9092
+                restHost: omega-host.local:443
+              id: 22
+              connectionInfo:
+                host: node22.host.local
+                port: 9092
+                url: https://node22.host.local/api
+              next: 23
+            - service: egress
+              id: 23
+              connectionInfo:
+                host: node23.host.local
+                port: 443
+                url: https://node23.host.local/api
+              next: 24
+          id: 21
+          clusterName: cluster-2
+          connectionInfo:
+            host: node21.host.local
+            port: 8080
+            url: https://node21.host.local/api
+          next: 24
+        - type: kafka
+          name: OMEGA.TOPIC.OUT.V1
+          partitions: 10
+          configuration:
+            max.message.bytes: 4194304
+            retention.ms: 432000000
+          security:
+            principals:
+              - principal: CN=Consumer, OUI=Test
+                operations:
+                  - read
+                  - describe
+                group:
+                  - consumers
+          id: 24
+          connectionInfo:
+            host: node26.host.local
+            port: 3000
+            url: https://node26.host.local/api
+  stand: IFT
+  flowName: alfa-delta-sigmaboy

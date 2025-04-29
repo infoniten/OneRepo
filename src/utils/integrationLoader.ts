@@ -115,4 +115,18 @@ integration:
         url: https://node0.host.local/api
       id: 0
       next: 1
-`; 
+`;
+
+export async function updateIntegration(stand: string, flow: string, integration: Integration): Promise<void> {
+  const yamlContent = yaml.dump({ integration });
+  const response = await fetch('/api/integrations/update', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ stand, flow, content: yamlContent }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update integration');
+  }
+} 

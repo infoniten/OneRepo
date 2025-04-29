@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, Box, Typography, List, ListItem, ListItemText, IconButton, Chip, Divider, TextField, Button, Autocomplete, Select, MenuItem } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
@@ -66,28 +66,66 @@ const KafkaSection = ({ element, onSave }: { element: Element, onSave?: (patch: 
     }
   };
 
+  const handleAclChange = (idx: number, field: string, value: any) => {
+    setSecurity(list => list.map((item, i) => i === idx ? { ...item, [field]: value } : item));
+  };
+
+  const handleAclRemove = (idx: number) => {
+    setSecurity(list => list.filter((_, i) => i !== idx));
+  };
+
+  const handleAclEdit = (idx: number) => {
+    if (editAclIdx === idx) {
+      onSave && onSave({
+        security: {
+          principals: security.map(p => ({
+            principal: p.principal,
+            operations: p.operations,
+            group: p.group
+          }))
+        }
+      });
+      setEditAclIdx(null);
+    } else {
+      setEditAclIdx(idx);
+    }
+  };
+
+  const handleAclAdd = () => {
+    if (newAcl.principal.trim() && newAcl.operations.length > 0) {
+      const updatedSecurity = [...security, { ...newAcl }];
+      setSecurity(updatedSecurity);
+      onSave && onSave({
+        security: {
+          principals: updatedSecurity.map(p => ({
+            principal: p.principal,
+            operations: p.operations,
+            group: p.group
+          }))
+        }
+      });
+      setNewAcl({ principal: '', operations: [], group: [] });
+      setAddMode(false);
+    }
+  };
+
   const handleSave = () => {
     const configuration = config.reduce((acc, { key, value }) => {
       acc[key] = isNaN(Number(value)) ? value : Number(value);
       return acc;
     }, {} as Record<string, any>);
-    onSave && onSave({ partitions, configuration });
+    onSave && onSave({
+      partitions,
+      configuration,
+      security: {
+        principals: security.map(p => ({
+          principal: p.principal,
+          operations: p.operations,
+          group: p.group
+        }))
+      }
+    });
     setEditMode(false);
-  };
-
-  const handleAclChange = (idx: number, field: string, value: any) => {
-    setSecurity(list => list.map((item, i) => i === idx ? { ...item, [field]: value } : item));
-  };
-  const handleAclRemove = (idx: number) => {
-    setSecurity(list => list.filter((_, i) => i !== idx));
-  };
-  const handleAclEdit = (idx: number) => {
-    setEditAclIdx(idx);
-  };
-  const handleAclAdd = () => {
-    setSecurity(list => [...list, { ...newAcl }]);
-    setNewAcl({ principal: '', operations: [], group: [] });
-    setAddMode(false);
   };
 
   if (!isKafkaElement(element)) return null;
@@ -369,33 +407,104 @@ const KafkaSection = ({ element, onSave }: { element: Element, onSave?: (patch: 
   );
 };
 
-const NginxSection = ({ element }: { element: Element }) => {
-  const [requestSchemaContent, setRequestSchemaContent] = useState<string | null>(null);
-  const [responseSchemaContent, setResponseSchemaContent] = useState<string | null>(null);
+const NginxSection = ({ element, onSave }: { element: Element, onSave?: (patch: Partial<Element>) => void }) => {
+  const [requestSchemaContent, setRequestSchemaContent] = useState<string | undefined>(() => 
+    element.requestSchemaValidation
+  );
+  const [responseSchemaContent, setResponseSchemaContent] = useState<string | undefined>(() => 
+    element.responseSchemaValidation
+  );
   const [showRequestSchema, setShowRequestSchema] = useState(false);
   const [showResponseSchema, setShowResponseSchema] = useState(false);
-  const [modSecRules, setModSecRules] = useState<string[]>(
+  const [modSecRules, setModSecRules] = useState<string[]>(() =>
     (element as any).modSecurityTurnedOffRules ? [...(element as any).modSecurityTurnedOffRules] : []
   );
   const [newRule, setNewRule] = useState('');
   const [editMode, setEditMode] = useState(false);
-  const [requestType, setRequestType] = useState<string[]>(
+  const [requestType, setRequestType] = useState<string[]>(() =>
     Array.isArray((element as any).requestType)
       ? (element as any).requestType
       : (typeof (element as any).requestType === 'string' && (element as any).requestType)
         ? [(element as any).requestType]
         : []
   );
-  const [nginxPort, setNginxPort] = useState((element as any).nginxPort || '');
-  const [remoteHost, setRemoteHost] = useState((element as any).remoteHost || '');
+  const [nginxPort, setNginxPort] = useState(() => (element as any).nginxPort || '');
+  const [remoteHost, setRemoteHost] = useState(() => (element as any).remoteHost || '');
+  const [editingRequestSchema, setEditingRequestSchema] = useState(false);
+  const [editingResponseSchema, setEditingResponseSchema] = useState(false);
+  const [tempRequestSchema, setTempRequestSchema] = useState('');
+  const [tempResponseSchema, setTempResponseSchema] = useState('');
+
+  useEffect(() => {
+    setRequestSchemaContent(element.requestSchemaValidation);
+    setResponseSchemaContent(element.responseSchemaValidation);
+    setModSecRules((element as any).modSecurityTurnedOffRules ? [...(element as any).modSecurityTurnedOffRules] : []);
+    setRequestType(
+      Array.isArray((element as any).requestType)
+        ? (element as any).requestType
+        : (typeof (element as any).requestType === 'string' && (element as any).requestType)
+          ? [(element as any).requestType]
+          : []
+    );
+    setNginxPort((element as any).nginxPort || '');
+    setRemoteHost((element as any).remoteHost || '');
+  }, [element]);
 
   const handleViewSchema = async (filePath: string, type: 'request' | 'response') => {
     if (type === 'request') {
-      setRequestSchemaContent(`Содержимое файла: ${filePath}`);
+      setRequestSchemaContent(filePath);
+      setTempRequestSchema(filePath);
       setShowRequestSchema(true);
     } else {
-      setResponseSchemaContent(`Содержимое файла: ${filePath}`);
+      setResponseSchemaContent(filePath);
+      setTempResponseSchema(filePath);
       setShowResponseSchema(true);
+    }
+  };
+
+  const handleSchemaEdit = (type: 'request' | 'response') => {
+    if (type === 'request') {
+      setEditingRequestSchema(true);
+      setTempRequestSchema(requestSchemaContent || '');
+    } else {
+      setEditingResponseSchema(true);
+      setTempResponseSchema(responseSchemaContent || '');
+    }
+  };
+
+  const handleSchemaSave = (type: 'request' | 'response') => {
+    if (type === 'request') {
+      setRequestSchemaContent(tempRequestSchema);
+      setEditingRequestSchema(false);
+      onSave && onSave({
+        requestType,
+        nginxPort: nginxPort ? Number(nginxPort) : undefined,
+        remoteHost,
+        modSecurityTurnedOffRules: modSecRules,
+        requestSchemaValidation: tempRequestSchema,
+        responseSchemaValidation: responseSchemaContent
+      });
+    } else {
+      setResponseSchemaContent(tempResponseSchema);
+      setEditingResponseSchema(false);
+      onSave && onSave({
+        requestType,
+        nginxPort: nginxPort ? Number(nginxPort) : undefined,
+        remoteHost,
+        modSecurityTurnedOffRules: modSecRules,
+        requestSchemaValidation: requestSchemaContent,
+        responseSchemaValidation: tempResponseSchema
+      });
+    }
+  };
+
+  const handleSchemaCancel = (type: 'request' | 'response') => {
+    if (type === 'request') {
+      setEditingRequestSchema(false);
+      setTempRequestSchema(requestSchemaContent || '');
+    } else {
+      setEditingResponseSchema(false);
+      setTempResponseSchema(responseSchemaContent || '');
     }
   };
 
@@ -404,24 +513,89 @@ const NginxSection = ({ element }: { element: Element }) => {
     if (file) {
       const reader = new FileReader();
       reader.onload = (ev) => {
+        const content = ev.target?.result as string;
         if (type === 'request') {
-          setRequestSchemaContent(ev.target?.result as string);
+          setRequestSchemaContent(content);
+          onSave && onSave({
+            requestType,
+            nginxPort: nginxPort ? Number(nginxPort) : undefined,
+            remoteHost,
+            modSecurityTurnedOffRules: modSecRules,
+            requestSchemaValidation: content,
+            responseSchemaValidation: responseSchemaContent
+          });
         } else {
-          setResponseSchemaContent(ev.target?.result as string);
+          setResponseSchemaContent(content);
+          onSave && onSave({
+            requestType,
+            nginxPort: nginxPort ? Number(nginxPort) : undefined,
+            remoteHost,
+            modSecurityTurnedOffRules: modSecRules,
+            requestSchemaValidation: requestSchemaContent,
+            responseSchemaValidation: content
+          });
         }
       };
       reader.readAsText(file);
     }
+    e.target.value = '';
   };
 
   const handleRemoveRule = (rule: string) => {
-    setModSecRules(rules => rules.filter(r => r !== rule));
+    const updatedRules = modSecRules.filter(r => r !== rule);
+    setModSecRules(updatedRules);
+    onSave && onSave({
+      ...element,
+      modSecurityTurnedOffRules: updatedRules
+    });
   };
+
   const handleAddRule = () => {
     if (newRule.trim() && !modSecRules.includes(newRule.trim())) {
-      setModSecRules(rules => [...rules, newRule.trim()]);
+      const updatedRules = [...modSecRules, newRule.trim()];
+      setModSecRules(updatedRules);
+      onSave && onSave({
+        ...element,
+        modSecurityTurnedOffRules: updatedRules
+      });
       setNewRule('');
     }
+  };
+
+  const handleDeleteSchema = (type: 'request' | 'response') => {
+    if (type === 'request') {
+      setRequestSchemaContent(undefined);
+      onSave && onSave({
+        requestType,
+        nginxPort: nginxPort ? Number(nginxPort) : undefined,
+        remoteHost,
+        modSecurityTurnedOffRules: modSecRules,
+        requestSchemaValidation: undefined,
+        responseSchemaValidation: responseSchemaContent
+      });
+    } else {
+      setResponseSchemaContent(undefined);
+      onSave && onSave({
+        requestType,
+        nginxPort: nginxPort ? Number(nginxPort) : undefined,
+        remoteHost,
+        modSecurityTurnedOffRules: modSecRules,
+        requestSchemaValidation: requestSchemaContent,
+        responseSchemaValidation: undefined
+      });
+    }
+  };
+
+  const handleSave = () => {
+    onSave && onSave({
+      requestType,
+      nginxPort: nginxPort ? Number(nginxPort) : undefined,
+      remoteHost,
+      modSecurityTurnedOffRules: modSecRules,
+      requestSchemaValidation: requestSchemaContent,
+      responseSchemaValidation: responseSchemaContent
+    });
+    setEditMode(false);
   };
 
   if (element.type.toLowerCase() !== 'nginx') return null;
@@ -488,70 +662,116 @@ const NginxSection = ({ element }: { element: Element }) => {
         </ListItem>
         <ListItem>
           <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 220, flex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 160, flex: '0 0 auto' }}>
               <InsertDriveFileIcon color="action" sx={{ mr: 1 }} />
-              <Typography sx={{ minWidth: 140 }}>Request Schema Validation</Typography>
-              {nginx.requestSchemaValidation && (
-                <Typography
-                  sx={{
-                    color: 'text.secondary',
-                    ml: 1,
-                    maxWidth: 120,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    display: 'inline-block',
-                    verticalAlign: 'middle',
-                  }}
-                  title={nginx.requestSchemaValidation.split('/').pop()}
-                >
-                  {nginx.requestSchemaValidation.split('/').pop()}
-                </Typography>
-              )}
+              <Typography>Request Schema Validation</Typography>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 2, flexShrink: 0 }}>
+            {nginx.requestSchemaValidation && (
+              <Typography
+                sx={{
+                  color: 'text.secondary',
+                  ml: 1,
+                  maxWidth: 120,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flex: '1 1 auto'
+                }}
+                title={nginx.requestSchemaValidation.split('/').pop()}
+              >
+                {nginx.requestSchemaValidation.split('/').pop()?.replace(/^xs:schema>/, '')}
+              </Typography>
+            )}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto', flexShrink: 0 }}>
               {nginx.requestSchemaValidation ? (
                 <>
-                  <Button size="small" startIcon={<VisibilityIcon />} onClick={() => handleViewSchema(nginx.requestSchemaValidation!, 'request')}>Просмотреть</Button>
-                  <Button size="small" component="label">Заменить файл<input type="file" hidden onChange={e => handleFileChange(e, 'request')} /></Button>
+                  <IconButton size="small" onClick={() => handleViewSchema(nginx.requestSchemaValidation!, 'request')} title="Просмотреть">
+                    <VisibilityIcon fontSize="small" />
+                  </IconButton>
+                  <Button
+                    size="small"
+                    component="label"
+                    sx={{ minWidth: 'unset', px: 1 }}
+                  >
+                    Заменить
+                    <input type="file" hidden onChange={e => handleFileChange(e, 'request')} />
+                  </Button>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDeleteSchema('request')}
+                    title="Удалить"
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
                 </>
               ) : (
-                <Button size="small" component="label">Добавить файл<input type="file" hidden onChange={e => handleFileChange(e, 'request')} /></Button>
+                <Button
+                  size="small"
+                  component="label"
+                  sx={{ minWidth: 'unset', px: 1 }}
+                >
+                  Добавить
+                  <input type="file" hidden onChange={e => handleFileChange(e, 'request')} />
+                </Button>
               )}
             </Box>
           </Box>
         </ListItem>
         <ListItem>
           <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 220, flex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 160, flex: '0 0 auto' }}>
               <InsertDriveFileIcon color="action" sx={{ mr: 1 }} />
-              <Typography sx={{ minWidth: 140 }}>Response Schema Validation</Typography>
-              {nginx.responseSchemaValidation && (
-                <Typography
-                  sx={{
-                    color: 'text.secondary',
-                    ml: 1,
-                    maxWidth: 120,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    display: 'inline-block',
-                    verticalAlign: 'middle',
-                  }}
-                  title={nginx.responseSchemaValidation.split('/').pop()}
-                >
-                  {nginx.responseSchemaValidation.split('/').pop()}
-                </Typography>
-              )}
+              <Typography>Response Schema Validation</Typography>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 2, flexShrink: 0 }}>
+            {nginx.responseSchemaValidation && (
+              <Typography
+                sx={{
+                  color: 'text.secondary',
+                  ml: 1,
+                  maxWidth: 120,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flex: '1 1 auto'
+                }}
+                title={nginx.responseSchemaValidation.split('/').pop()}
+              >
+                {nginx.responseSchemaValidation.split('/').pop()?.replace(/^xs:schema>/, '')}
+              </Typography>
+            )}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto', flexShrink: 0 }}>
               {nginx.responseSchemaValidation ? (
                 <>
-                  <Button size="small" startIcon={<VisibilityIcon />} onClick={() => handleViewSchema(nginx.responseSchemaValidation!, 'response')}>Просмотреть</Button>
-                  <Button size="small" component="label">Заменить файл<input type="file" hidden onChange={e => handleFileChange(e, 'response')} /></Button>
+                  <IconButton size="small" onClick={() => handleViewSchema(nginx.responseSchemaValidation!, 'response')} title="Просмотреть">
+                    <VisibilityIcon fontSize="small" />
+                  </IconButton>
+                  <Button
+                    size="small"
+                    component="label"
+                    sx={{ minWidth: 'unset', px: 1 }}
+                  >
+                    Заменить
+                    <input type="file" hidden onChange={e => handleFileChange(e, 'response')} />
+                  </Button>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDeleteSchema('response')}
+                    title="Удалить"
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
                 </>
               ) : (
-                <Button size="small" component="label">Добавить файл<input type="file" hidden onChange={e => handleFileChange(e, 'response')} /></Button>
+                <Button
+                  size="small"
+                  component="label"
+                  sx={{ minWidth: 'unset', px: 1 }}
+                >
+                  Добавить
+                  <input type="file" hidden onChange={e => handleFileChange(e, 'response')} />
+                </Button>
               )}
             </Box>
           </Box>
@@ -564,7 +784,7 @@ const NginxSection = ({ element }: { element: Element }) => {
           </Button>
         ) : (
           <>
-            <Button variant="contained" size="small" onClick={() => setEditMode(false)}>
+            <Button variant="contained" size="small" onClick={handleSave}>
               Сохранить
             </Button>
             <Button variant="text" size="small" onClick={() => setEditMode(false)}>
@@ -607,23 +827,405 @@ const NginxSection = ({ element }: { element: Element }) => {
         </Button>
       </Box>
       <Dialog open={showRequestSchema} onClose={() => setShowRequestSchema(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Request Schema Content</DialogTitle>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            Request Schema Content
+            {!editingRequestSchema ? (
+              <Button
+                size="small"
+                startIcon={<EditIcon />}
+                onClick={() => handleSchemaEdit('request')}
+              >
+                Редактировать
+              </Button>
+            ) : (
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleSchemaSave('request')}
+                >
+                  Сохранить
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => handleSchemaCancel('request')}
+                >
+                  Отмена
+                </Button>
+              </Box>
+            )}
+          </Box>
+        </DialogTitle>
         <DialogContent dividers>
-          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{requestSchemaContent}</pre>
+          {editingRequestSchema ? (
+            <TextField
+              multiline
+              fullWidth
+              minRows={10}
+              maxRows={20}
+              value={tempRequestSchema}
+              onChange={(e) => setTempRequestSchema(e.target.value)}
+              sx={{ 
+                '& .MuiInputBase-input': { 
+                  fontFamily: 'monospace',
+                  fontSize: '0.875rem'
+                } 
+              }}
+            />
+          ) : (
+            <pre style={{ 
+              whiteSpace: 'pre-wrap', 
+              wordBreak: 'break-all',
+              margin: 0,
+              fontFamily: 'monospace',
+              fontSize: '0.875rem'
+            }}>
+              {requestSchemaContent}
+            </pre>
+          )}
         </DialogContent>
       </Dialog>
       <Dialog open={showResponseSchema} onClose={() => setShowResponseSchema(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Response Schema Content</DialogTitle>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            Response Schema Content
+            {!editingResponseSchema ? (
+              <Button
+                size="small"
+                startIcon={<EditIcon />}
+                onClick={() => handleSchemaEdit('response')}
+              >
+                Редактировать
+              </Button>
+            ) : (
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleSchemaSave('response')}
+                >
+                  Сохранить
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => handleSchemaCancel('response')}
+                >
+                  Отмена
+                </Button>
+              </Box>
+            )}
+          </Box>
+        </DialogTitle>
         <DialogContent dividers>
-          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{responseSchemaContent}</pre>
+          {editingResponseSchema ? (
+            <TextField
+              multiline
+              fullWidth
+              minRows={10}
+              maxRows={20}
+              value={tempResponseSchema}
+              onChange={(e) => setTempResponseSchema(e.target.value)}
+              sx={{ 
+                '& .MuiInputBase-input': { 
+                  fontFamily: 'monospace',
+                  fontSize: '0.875rem'
+                } 
+              }}
+            />
+          ) : (
+            <pre style={{ 
+              whiteSpace: 'pre-wrap', 
+              wordBreak: 'break-all',
+              margin: 0,
+              fontFamily: 'monospace',
+              fontSize: '0.875rem'
+            }}>
+              {responseSchemaContent}
+            </pre>
+          )}
         </DialogContent>
       </Dialog>
     </Box>
   );
 };
 
-export const ElementDetailsModal: React.FC<ElementDetailsModalProps & { onKafkaSave?: (patch: Partial<Element>) => void }> = ({ element, open, onClose, onKafkaSave }) => {
-  if (!element) return null;
+interface Server {
+  host: string;
+  port: number;
+}
+
+interface HealthCheck {
+  url: string;
+  port: number;
+  interval: number;
+  rise: number;
+  fall: number;
+  timeout: number;
+  expect: string;
+}
+
+const GeoBalancerSection = ({ element, onSave }: { element: Element, onSave?: (patch: Partial<Element>) => void }) => {
+  const [editMode, setEditMode] = useState(false);
+  const [servers, setServers] = useState<Server[]>(
+    element.servers || []
+  );
+  const [healthCheck, setHealthCheck] = useState<HealthCheck>(
+    element.healthCheck || {
+      url: '',
+      port: 0,
+      interval: 0,
+      rise: 0,
+      fall: 0,
+      timeout: 0,
+      expect: ''
+    }
+  );
+
+  useEffect(() => {
+    setServers(element.servers || []);
+    setHealthCheck(element.healthCheck || {
+      url: '',
+      port: 0,
+      interval: 0,
+      rise: 0,
+      fall: 0,
+      timeout: 0,
+      expect: ''
+    });
+  }, [element]);
+
+  const handleAddServer = () => {
+    if (!editMode) return;
+    const newServers = [...servers, { host: '', port: 443 }];
+    setServers(newServers);
+  };
+
+  const handleRemoveServer = (index: number) => {
+    if (!editMode) return;
+    const newServers = servers.filter((_, i) => i !== index);
+    setServers(newServers);
+  };
+
+  const handleServerChange = (index: number, field: keyof Server, value: string | number) => {
+    if (!editMode) return;
+    const newServers = servers.map((server, i) => 
+      i === index ? { ...server, [field]: value } : server
+    );
+    setServers(newServers);
+  };
+
+  const handleHealthCheckChange = (field: keyof HealthCheck, value: string | number) => {
+    if (!editMode) return;
+    const newHealthCheck = { ...healthCheck, [field]: value };
+    setHealthCheck(newHealthCheck);
+  };
+
+  const handleSave = () => {
+    onSave && onSave({
+      ...element,
+      servers,
+      healthCheck
+    });
+    setEditMode(false);
+  };
+
+  if (!['geobalancer', 'geo-load-balancer'].includes(element.type.toLowerCase())) return null;
+
+  return (
+    <Box sx={{ mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+          Geo Balancer Configuration
+        </Typography>
+        {!editMode ? (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<EditIcon />}
+            onClick={() => setEditMode(true)}
+          >
+            Редактировать
+          </Button>
+        ) : (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleSave}
+            >
+              Сохранить
+            </Button>
+            <Button
+              variant="text"
+              size="small"
+              onClick={() => {
+                setEditMode(false);
+                setServers(element.servers || []);
+                setHealthCheck(element.healthCheck || {
+                  url: '',
+                  port: 0,
+                  interval: 0,
+                  rise: 0,
+                  fall: 0,
+                  timeout: 0,
+                  expect: ''
+                });
+              }}
+            >
+              Отмена
+            </Button>
+          </Box>
+        )}
+      </Box>
+
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Typography variant="subtitle2">Servers</Typography>
+          {editMode && (
+            <Button
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={handleAddServer}
+            >
+              Add Server
+            </Button>
+          )}
+        </Box>
+        <List dense>
+          {servers.map((server, index) => (
+            <ListItem key={index}>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
+                <TextField
+                  size="small"
+                  label="Host"
+                  value={server.host}
+                  onChange={(e) => handleServerChange(index, 'host', e.target.value)}
+                  sx={{ flex: 1 }}
+                  disabled={!editMode}
+                  InputProps={
+                    !editMode ? {
+                      style: {
+                        background: '#f5f5f5',
+                        color: '#222',
+                        opacity: 1
+                      }
+                    } : {}
+                  }
+                />
+                <TextField
+                  size="small"
+                  label="Port"
+                  type="number"
+                  value={server.port}
+                  onChange={(e) => handleServerChange(index, 'port', Number(e.target.value))}
+                  sx={{ width: 100 }}
+                  disabled={!editMode}
+                  InputProps={
+                    !editMode ? {
+                      style: {
+                        background: '#f5f5f5',
+                        color: '#222',
+                        opacity: 1
+                      }
+                    } : {}
+                  }
+                />
+                {editMode && (
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleRemoveServer(index)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                )}
+              </Box>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+
+      <Divider sx={{ my: 2 }} />
+
+      <Box>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>Health Check</Typography>
+        <List dense>
+          {[
+            { label: 'URL', field: 'url', type: 'text' },
+            { label: 'Port', field: 'port', type: 'number' },
+            { label: 'Interval (ms)', field: 'interval', type: 'number' },
+            { label: 'Rise', field: 'rise', type: 'number' },
+            { label: 'Fall', field: 'fall', type: 'number' },
+            { label: 'Timeout (ms)', field: 'timeout', type: 'number' },
+            { label: 'Expect', field: 'expect', type: 'text' }
+          ].map(({ label, field, type }) => (
+            <ListItem key={field}>
+              <TextField
+                fullWidth
+                size="small"
+                label={label}
+                type={type}
+                value={healthCheck[field as keyof HealthCheck]}
+                onChange={(e) => handleHealthCheckChange(
+                  field as keyof HealthCheck,
+                  type === 'number' ? Number(e.target.value) : e.target.value
+                )}
+                disabled={!editMode}
+                InputProps={
+                  !editMode ? {
+                    style: {
+                      background: '#f5f5f5',
+                      color: '#222',
+                      opacity: 1
+                    }
+                  } : {}
+                }
+              />
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+    </Box>
+  );
+};
+
+export const ElementDetailsModal: React.FC<ElementDetailsModalProps & { 
+  onKafkaSave?: (patch: Partial<Element>) => void;
+  onNginxSave?: (patch: Partial<Element>) => void;
+  onGeoBalancerSave?: (patch: Partial<Element>) => void;
+}> = ({ element, open, onClose, onKafkaSave, onNginxSave, onGeoBalancerSave }) => {
+  const [currentElement, setCurrentElement] = useState<Element | Service | null>(element);
+
+  useEffect(() => {
+    setCurrentElement(element);
+  }, [element]);
+
+  const handleNginxSave = (patch: Partial<Element>) => {
+    if (currentElement && isElement(currentElement)) {
+      const updatedElement = {
+        ...currentElement,
+        ...patch
+      };
+      setCurrentElement(updatedElement);
+      onNginxSave?.(patch);
+    }
+  };
+
+  const handleGeoBalancerSave = (patch: Partial<Element>) => {
+    if (currentElement && isElement(currentElement)) {
+      const updatedElement = {
+        ...currentElement,
+        ...patch
+      };
+      setCurrentElement(updatedElement);
+      onGeoBalancerSave?.(patch);
+    }
+  };
+
+  if (!currentElement) return null;
 
   return (
     <Dialog
@@ -641,10 +1243,10 @@ export const ElementDetailsModal: React.FC<ElementDetailsModalProps & { onKafkaS
       <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
           <Typography variant="h6" component="div">
-            {isElement(element) ? element.name : element.service}
+            {isElement(currentElement) ? currentElement.name : currentElement.service}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            {element.type}
+            {currentElement.type}
           </Typography>
         </Box>
         <IconButton
@@ -656,11 +1258,14 @@ export const ElementDetailsModal: React.FC<ElementDetailsModalProps & { onKafkaS
         </IconButton>
       </DialogTitle>
       <DialogContent dividers>
-        {isElement(element) && isKafkaElement(element) && (
-          <KafkaSection element={element} onSave={onKafkaSave} />
+        {isElement(currentElement) && isKafkaElement(currentElement) && (
+          <KafkaSection element={currentElement} onSave={onKafkaSave} />
         )}
-        {isElement(element) && element.type.toLowerCase() === 'nginx' && (
-          <NginxSection element={element} />
+        {isElement(currentElement) && currentElement.type.toLowerCase() === 'nginx' && (
+          <NginxSection element={currentElement} onSave={handleNginxSave} />
+        )}
+        {isElement(currentElement) && ['geobalancer', 'geo-load-balancer'].includes(currentElement.type.toLowerCase()) && (
+          <GeoBalancerSection element={currentElement} onSave={handleGeoBalancerSave} />
         )}
       </DialogContent>
     </Dialog>

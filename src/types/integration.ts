@@ -52,23 +52,52 @@ export interface Principal {
 }
 
 export interface Element {
-  id: string | number;
-  name?: string;
+  id: string;
+  name: string;
   type: string;
+  // Connection related fields
   connection?: ConnectionInfo;
   connectionInfo?: ConnectionInfo;
-  security?: Security;
-  kafkaConfig?: KafkaConfig;
+  // Service related fields
   services?: Service[];
+  // Navigation
   next?: number | number[];
+  // Cluster info
   clusterName?: string;
+  // Status indicators
   warn?: number;
   error?: number;
+  // Kafka specific fields
+  kafkaConfig?: KafkaConfig;
   partitions?: number;
-  configuration?: {
-    max_message_bytes?: number;
-    retention_ms?: number;
-    [key: string]: any;
+  configuration?: Record<string, any>;
+  security?: {
+    principals: Array<{
+      principal: string;
+      operations: string[];
+      group?: string[];
+    }>;
+  };
+  // Nginx specific fields
+  requestType?: string[];
+  nginxPort?: number;
+  remoteHost?: string;
+  modSecurityTurnedOffRules?: string[];
+  requestSchemaValidation?: string;
+  responseSchemaValidation?: string;
+  // GeoBalancer specific fields
+  servers?: Array<{
+    host: string;
+    port: number;
+  }>;
+  healthCheck?: {
+    url: string;
+    port: number;
+    interval: number;
+    rise: number;
+    fall: number;
+    timeout: number;
+    expect: string;
   };
 }
 

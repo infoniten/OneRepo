@@ -7,7 +7,7 @@ import IntegrationFlow from './components/IntegrationFlow/IntegrationFlow';
 import { ElementDetailsModal } from './components/ElementDetailsModal/ElementDetailsModal';
 import { ChatInterface } from './components/ChatInterface/ChatInterface';
 import { Integration, Element, Service } from './types/integration';
-import { loadIntegrations } from './utils/integrationLoader';
+import { loadIntegrations, updateIntegration } from './utils/integrationLoader';
 
 function App() {
   const [integrations, setIntegrations] = useState<Integration[]>([]);
@@ -124,6 +124,69 @@ function App() {
     setSelectedElement(element);
     setIsModalOpen(true);
   }, [selectedIntegration]);
+
+  // Новый обработчик сохранения Kafka-конфигурации
+  const handleKafkaSave = useCallback(async (patch: Partial<Element>) => {
+    if (!selectedIntegration || !selectedElement) return;
+    // Клонируем интеграцию
+    const updatedIntegration = JSON.parse(JSON.stringify(selectedIntegration)) as Integration;
+    // Находим и обновляем нужный элемент
+    updatedIntegration.segments.forEach(segment => {
+      segment.elements = segment.elements.map(el => {
+        if (el.id === selectedElement.id) {
+          return { ...el, ...patch };
+        }
+        return el;
+      });
+    });
+    // Сохраняем на сервер
+    await updateIntegration(updatedIntegration.stand, updatedIntegration.flowName, updatedIntegration);
+    // Обновляем состояние
+    setSelectedIntegration(updatedIntegration);
+    setIntegrations(prev => prev.map(i => i.name === updatedIntegration.name ? updatedIntegration : i));
+  }, [selectedIntegration, selectedElement]);
+
+  // Новый обработчик сохранения Nginx-конфигурации
+  const handleNginxSave = useCallback(async (patch: Partial<Element>) => {
+    if (!selectedIntegration || !selectedElement) return;
+    // Клонируем интеграцию
+    const updatedIntegration = JSON.parse(JSON.stringify(selectedIntegration)) as Integration;
+    // Находим и обновляем нужный элемент
+    updatedIntegration.segments.forEach(segment => {
+      segment.elements = segment.elements.map(el => {
+        if (el.id === selectedElement.id) {
+          return { ...el, ...patch };
+        }
+        return el;
+      });
+    });
+    // Сохраняем на сервер
+    await updateIntegration(updatedIntegration.stand, updatedIntegration.flowName, updatedIntegration);
+    // Обновляем состояние
+    setSelectedIntegration(updatedIntegration);
+    setIntegrations(prev => prev.map(i => i.name === updatedIntegration.name ? updatedIntegration : i));
+  }, [selectedIntegration, selectedElement]);
+
+  // Новый обработчик сохранения Geo-балансировщика
+  const handleGeoBalancerSave = useCallback(async (patch: Partial<Element>) => {
+    if (!selectedIntegration || !selectedElement) return;
+    // Клонируем интеграцию
+    const updatedIntegration = JSON.parse(JSON.stringify(selectedIntegration)) as Integration;
+    // Находим и обновляем нужный элемент
+    updatedIntegration.segments.forEach(segment => {
+      segment.elements = segment.elements.map(el => {
+        if (el.id === selectedElement.id) {
+          return { ...el, ...patch };
+        }
+        return el;
+      });
+    });
+    // Сохраняем на сервер
+    await updateIntegration(updatedIntegration.stand, updatedIntegration.flowName, updatedIntegration);
+    // Обновляем состояние
+    setSelectedIntegration(updatedIntegration);
+    setIntegrations(prev => prev.map(i => i.name === updatedIntegration.name ? updatedIntegration : i));
+  }, [selectedIntegration, selectedElement]);
 
   if (loading) {
     return (
@@ -251,6 +314,9 @@ function App() {
         element={selectedElement}
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onKafkaSave={handleKafkaSave}
+        onNginxSave={handleNginxSave}
+        onGeoBalancerSave={handleGeoBalancerSave}
       />
     </Box>
   );

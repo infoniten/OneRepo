@@ -105,6 +105,39 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
+// Endpoint for updating integration files
+app.post('/api/integrations/update', async (req, res) => {
+  try {
+    const { stand, flow, content } = req.body;
+    
+    // Validate required fields
+    if (!stand || !flow || !content) {
+      return res.status(400).json({ error: 'Missing required fields: stand, flow, or content' });
+    }
+
+    // Ensure the path is safe and within the integration directory
+    const filePath = path.join(__dirname, 'integration', stand, flow, 'integration.yaml');
+    const integrationDir = path.join(__dirname, 'integration');
+    
+    if (!filePath.startsWith(integrationDir)) {
+      return res.status(403).json({ error: 'Invalid path' });
+    }
+
+    // Ensure the directory exists
+    const dirPath = path.dirname(filePath);
+    await fs.mkdir(dirPath, { recursive: true });
+
+    // Write the file
+    await fs.writeFile(filePath, content, 'utf8');
+    
+    console.log(`Updated integration file: ${stand}/${flow}/integration.yaml`);
+    res.json({ success: true, message: 'Integration file updated successfully' });
+  } catch (err) {
+    console.error('Error updating integration file:', err);
+    res.status(500).json({ error: 'Failed to update integration file' });
+  }
+});
+
 // Handle React routing, return all requests to React app
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));

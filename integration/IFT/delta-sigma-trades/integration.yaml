@@ -6,7 +6,7 @@ integration:
       elements:
         - type: kafka
           name: DELTA.TOPIC.EVENT.V5
-          partitions: 12
+          partitions: 123
           configuration:
             max.message.bytes: 4194500
             retention.ms: 432000088
@@ -137,7 +137,7 @@ integration:
             - host: alphaServer1.k8s.sb.ru
               port: 443
             - host: alphaServer2.k8s.sb.ru
-              port: 443
+              port: 447
             - host: alphaServer3.k8s.sb.ru
               port: 445
           healthCheck:

@@ -94,7 +94,20 @@ integration:
         - type: nginx
           requestType:
             - post
-          requestSchemaValidation: request.xsd
+          requestSchemaValidation: |
+            <?xml version="1.0" encoding="UTF-8"?>
+            <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+              <xs:element name="trade">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="id" type="xs:string" />
+                    <xs:element name="symbol" type="xs:string" />
+                    <xs:element name="quantity" type="xs:int" />
+                    <xs:element name="price" type="xs:float" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
           nginxPort: 443
           modSecurityTurnedOffRules:
             - modsec123

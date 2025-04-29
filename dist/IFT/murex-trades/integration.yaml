@@ -2,794 +2,831 @@ integration:
   name: murex-trades
   description: Поток по сделкам
   segments:
-  - segment: sigma
-    elements:
-    - type: Murex
-      connectionInfo:
-        host: node0.host.local
-        port: 80
-        url: https://node0.host.local/api
-      destinationInfo:
-        host: geo-load-balancer.host.local
-      id: 89
-      next: 90
-    - type: kafka
-      name: MUREX.SIGNED.TRADES
-      partitions: 10
-      configuration:
-        max.message.bytes: 4194304
-        retention.ms: 432000000
-      security:
-        principals:
-        - principal: CN=SomeDick, OUI=Test
-          operations:
-          - read
-          - describe
-          group:
-          - someGroup
-        - principal: CN=SomeDick2, OUI=Test
-          operations:
-          - write
-          - describe
-      connectionInfo:
-        host: node0.host.local
-        port: 80
-        url: https://node0.host.local/api
-      id: 90
-      next: [1,4,7]
-    - type: k8s
-      namespace: sigmaBoy-1
-      clusterName: sigmaBoy-1
-      next: [10,88]
-      services:
-      - service: murex-signed-signed-trades-gmsb-sowa-out
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api
-        id: 2
-        next: 3
-      - service: egress
-        connectionInfo:
-          host: node3.host.local
-          port: 3000
-          url: https://node3.host.local/api
-        destinationInfo:
-          host: k8s.host.local
-          port: 80
-          url: https://k8s.host.local/api
-        id: 3
-      connectionInfo:
-        host: node1.host.local
-        port: 8080
-        url: https://node1.host.local/api
-      destinationInfo:
-        host: nginx.host.local
-        port: 8080
-        url: https://nginx.host.local/api
-      id: 1
-    - type: k8s
-      namespace: sigmaBoy-2
-      clusterName: sigmaBoy-2
-      next: [10,88]
-      services:
-      - service: murex-signed-signed-trades-gmsb-sowa-out
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api
-        id: 5
-        next: 6
-      - service: egress
-        connectionInfo:
-          host: node3.host.local
-          port: 3000
-          url: https://node3.host.local/api
-        destinationInfo:
-          host: k8s.host.local
-          port: 80
-          url: https://k8s.host.local/api
-        id: 6
-      connectionInfo:
-        host: node1.host.local
-        port: 8080
-        url: https://node1.host.local/api
-      destinationInfo:
-        host: nginx.host.local
-        port: 8080
-        url: https://nginx.host.local/api
-      id: 4
-    - type: k8s
-      namespace: sigmaBoy-3
-      clusterName: sigmaBoy-3
-      next: [10,88]
-      warn: 10
-      services:
-      - service: murex-signed-signed-trades-gmsb-sowa-out
-        warn: 10
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api
-        id: 8
-        next: 9
-      - service: egress
-        error: 10
-        connectionInfo:
-          host: node3.host.local
-          port: 3000
-          url: https://node3.host.local/api
-        destinationInfo:
-          host: k8s.host.local
-          port: 80
-          url: https://k8s.host.local/api
-        id: 9
-      connectionInfo:
-        host: node1.host.local
-        port: 8080
-        url: https://node1.host.local/api
-      destinationInfo:
-        host: nginx.host.local
-        port: 8080
-        url: https://nginx.host.local/api
-      id: 7
-  - segment: sigma-alpha
-    elements:
-    - type: nginx
-      requestType: post
-      requestSchemaValidation: ../requestSchema.xsd
-      responseSchemaValidation: ../responseSchema.xsd
-      nginxPort: 443
-      modSecurityTurnedOffRules:
-      - modsec123
-      - modsec321
-      remoteHost: alphaHost:443
-      connectionInfo:
-        host: node4.host.local
-        port: 443
-        url: https://node4.host.local/api
-      destinationInfo:
-        host: geo-load-balancer.host.local
-        port: 9092
-        url: https://geo-load-balancer.host.local/api
-      id: 10
-      next: [11,13]
-    - type: nginx
-      error: 10
-      requestType: post
-      requestSchemaValidation: ../requestSchema.xsd
-      responseSchemaValidation: ../responseSchema.xsd
-      nginxPort: 443
-      modSecurityTurnedOffRules:
-      - modsec123
-      - modsec321
-      remoteHost: alphaHost:443
-      connectionInfo:
-        host: node4.host.local
-        port: 443
-        url: https://node4.host.local/api
-      destinationInfo:
-        host: geo-load-balancer.host.local
-        port: 9092
-        url: https://geo-load-balancer.host.local/api
-      id: 88
-      next: [11,13]
-  - segment: alpha
-    elements:
-    - type: k8s
-      namespace: alpha-1
-      clusterName: alpha-1
-      id: 11
-      next: 15
-      services:
-      - service: syngtp-murex-to-alpha-signed-trades
-        id: 12
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api
-    - type: k8s
-      namespace: alpha-2
-      clusterName: alpha-2
-      id: 13
-      next: 15
-      services:
-      - service: syngtp-murex-to-alpha-signed-trades
-        id: 14
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api
-    - type: kafka
-      name: MUREX.TRADES.EVENT.V1
-      id: 15
-      next: [16,17,19,20,21,22,24,28,30,33,35,40,42,45,47,52,54]
-      partitions: 10
-      configuration:
-        max.message.bytes: 4194304
-        retention.ms: 432000000
-      security:
-        principals:
-        - principal: CN=SomeDick, OUI=Test
-          operations:
-          - read
-          - describe
-          group:
-          - someGroup
-        - principal: CN=SomeDick2, OUI=Test
-          operations:
-          - write
-          - describe
-      connectionInfo:
-        host: node0.host.local
-        port: 80
-        url: https://node0.host.local/api
-    - type: sberrec
-      connectionInfo:
-        host: node4.host.local
-        port: 443
-        url: https://node4.host.local/api
-      destinationInfo:
-        host: geo-load-balancer.host.local
-        port: 9092
-        url: https://geo-load-balancer.host.local/api
-      id: 16
-    - type: TLM
-      connectionInfo:
-        host: node4.host.local
-        port: 443
-        url: https://node4.host.local/api
-      destinationInfo:
-        host: geo-load-balancer.host.local
-        port: 9092
-        url: https://geo-load-balancer.host.local/api
-      id: 17
-    - type: k3-trades
-      connectionInfo:
-        host: node4.host.local
-        port: 443
-        url: https://node4.host.local/api
-      destinationInfo:
-        host: geo-load-balancer.host.local
-        port: 9092
-        url: https://geo-load-balancer.host.local/api
-      id: 19
-    - type: nrt2
-      connectionInfo:
-        host: node4.host.local
-        port: 443
-        url: https://node4.host.local/api
-      destinationInfo:
-        host: geo-load-balancer.host.local
-        port: 9092
-        url: https://geo-load-balancer.host.local/api
-      id: 20
-    - type: ptqc
-      connectionInfo:
-        host: node4.host.local
-        port: 443
-        url: https://node4.host.local/api
-      destinationInfo:
-        host: geo-load-balancer.host.local
-        port: 9092
-        url: https://geo-load-balancer.host.local/api
-      id: 21
-    - type: k8s
-      namespace: alpha-1
-      clusterName: alpha-1
-      id: 22
-      next: 26
-      services:
-      - service: syngtp-murex-to-calypso-tcr
-        id: 23
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api
-    - type: k8s
-      namespace: alpha-2
-      clusterName: alpha-2
-      id: 24
-      next: 26
-      services:
-      - service: syngtp-murex-to-calypso-tcr
-        id: 25
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api  
-    - type: kafka
-      name: GMSERVICEBUS.CALYPSO_TRADES_EVENT.V1
-      id: 26
-      next: 27
-      partitions: 10
-      configuration:
-        max.message.bytes: 4194304
-        retention.ms: 432000000
-      security:
-        principals:
-        - principal: CN=SomeDick, OUI=Test
-          operations:
-          - read
-          - describe
-          group:
-          - someGroup
-        - principal: CN=SomeDick2, OUI=Test
-          operations:
-          - write
-          - describe
-      connectionInfo:
-        host: node0.host.local
-        port: 80
-        url: https://node0.host.local/api
-    - type: Calypso
-      connectionInfo:
-        host: node4.host.local
-        port: 443
-        url: https://node4.host.local/api
-      destinationInfo:
-        host: geo-load-balancer.host.local
-        port: 9092
-        url: https://geo-load-balancer.host.local/api
-      id: 27
-    - type: k8s
-      namespace: alpha-1
-      clusterName: alpha-1
-      id: 28
-      next: 32
-      services:
-      - service: syngtp-murex-to-calypso-tcr-fx
-        id: 29
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api
-    - type: k8s
-      namespace: alpha-2
-      clusterName: alpha-2
-      id: 30
-      next: 32
-      services:
-      - service: syngtp-murex-to-calypso-tcr-fx
-        id: 31
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api  
-    - type: kafka
-      name: GMSERVICEBUS.CALYPSO_TRADES_FX_EVENT.V1
-      id: 32
-      next: 27
-      partitions: 10
-      configuration:
-        max.message.bytes: 4194304
-        retention.ms: 432000000
-      security:
-        principals:
-        - principal: CN=SomeDick, OUI=Test
-          operations:
-          - read
-          - describe
-          group:
-          - someGroup
-        - principal: CN=SomeDick2, OUI=Test
-          operations:
-          - write
-          - describe
-      connectionInfo:
-        host: node0.host.local
-        port: 80
-        url: https://node0.host.local/api
-    - type: k8s
-      namespace: alpha-1
-      clusterName: alpha-1
-      id: 33
-      next: 37
-      services:
-      - service: syngtp-murex-to-custody-tcr
-        id: 34
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api
-    - type: k8s
-      namespace: alpha-2
-      clusterName: alpha-2
-      id: 35
-      next: 37
-      services:
-      - service: syngtp-murex-to-custody-tcr
-        id: 36
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api  
-    - type: kafka
-      name: GMSERVICEBUS.DCS_TRADES_EVENT.V1
-      id: 37
-      next: 38
-      partitions: 10
-      configuration:
-        max.message.bytes: 4194304
-        retention.ms: 432000000
-      security:
-        principals:
-        - principal: CN=SomeDick, OUI=Test
-          operations:
-          - read
-          - describe
-          group:
-          - someGroup
-        - principal: CN=SomeDick2, OUI=Test
-          operations:
-          - write
-          - describe
-      connectionInfo:
-        host: node0.host.local
-        port: 80
-        url: https://node0.host.local/api
-    - type: DSA
-      connectionInfo:
-        host: node4.host.local
-        port: 443
-        url: https://node4.host.local/api
-      destinationInfo:
-        host: geo-load-balancer.host.local
-        port: 9092
-        url: https://geo-load-balancer.host.local/api
-      id: 38
-      next: 39
-    - type: DCS
-      connectionInfo:
-        host: node4.host.local
-        port: 443
-        url: https://node4.host.local/api
-      destinationInfo:
-        host: geo-load-balancer.host.local
-        port: 9092
-        url: https://geo-load-balancer.host.local/api
-      id: 39
-    - type: k8s
-      namespace: alpha-1
-      clusterName: alpha-1
-      id: 40
-      next: 44
-      services:
-      - service: syngtp-murex-to-dogma-bs-signed-deals
-        id: 41
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api
-    - type: k8s
-      namespace: alpha-2
-      clusterName: alpha-2
-      id: 42
-      next: 44
-      services:
-      - service: syngtp-murex-to-dogma-bs-signed-deals
-        id: 43
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api  
-    - type: kafka
-      name: GMSERVICEBUS.DOGMA_BS_SIGNED_TRADES_EVENT.V1
-      id: 44
-      next: 51
-      partitions: 10
-      configuration:
-        max.message.bytes: 4194304
-        retention.ms: 432000000
-      security:
-        principals:
-        - principal: CN=SomeDick, OUI=Test
-          operations:
-          - read
-          - describe
-          group:
-          - someGroup
-        - principal: CN=SomeDick2, OUI=Test
-          operations:
-          - write
-          - describe
-      connectionInfo:
-        host: node0.host.local
-        port: 80
-        url: https://node0.host.local/api
-    - type: k8s
-      namespace: alpha-1
-      clusterName: alpha-1
-      id: 45
-      next: 49
-      services:
-      - service: syngtp-murex-to-dogma-signed-deals
-        id: 46
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api
-    - type: k8s
-      namespace: alpha-2
-      clusterName: alpha-2
-      id: 47
-      next: 49
-      services:
-      - service: syngtp-murex-to-dogma-signed-deals
-        id: 48
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api  
-    - type: kafka
-      name: GMSERVICEBUS.DOGMA_SD_SIGNED_TRADES_EVENT.V1
-      id: 49
-      next: 50
-      partitions: 10
-      configuration:
-        max.message.bytes: 4194304
-        retention.ms: 432000000
-      security:
-        principals:
-        - principal: CN=SomeDick, OUI=Test
-          operations:
-          - read
-          - describe
-          group:
-          - someGroup
-        - principal: CN=SomeDick2, OUI=Test
-          operations:
-          - write
-          - describe
-      connectionInfo:
-        host: node0.host.local
-        port: 80
-        url: https://node0.host.local/api
-    - type: Dogma
-      connectionInfo:
-        host: node4.host.local
-        port: 443
-        url: https://node4.host.local/api
-      destinationInfo:
-        host: geo-load-balancer.host.local
-        port: 9092
-        url: https://geo-load-balancer.host.local/api
-      id: 50
-    - type: Dogma-bs
-      connectionInfo:
-        host: node4.host.local
-        port: 443
-        url: https://node4.host.local/api
-      destinationInfo:
-        host: geo-load-balancer.host.local
-        port: 9092
-        url: https://geo-load-balancer.host.local/api
-      id: 51
-    - type: k8s
-      namespace: alpha-1
-      clusterName: alpha-1
-      id: 52
-      next: 56
-      services:
-      - service: syngtp-murex-to-papyrus-signed-deals
-        id: 53
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api
-    - type: k8s
-      namespace: alpha-2
-      clusterName: alpha-2
-      id: 54
-      next: 56
-      services:
-      - service: syngtp-murex-to-papyrus-signed-deals
-        id: 55
-        subType: kafka-to-rest
-        configs:
-          topicName: DELTA.TOPIC.EVENT.V1
-          kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
-          kafkaGroup: someGroup
-          restHost: nginxHost:443
-        connectionInfo:
-          host: node2.host.local
-          port: 80
-          url: https://node2.host.local/api
-        destinationInfo:
-          host: egress.host.local
-          port: 8080
-          url: https://egress.host.local/api  
-    - type: kafka
-      name: GMSERVICEBUS.PAPYRUS_TRADES_EVENT.V1
-      id: 56
-      next: 57
-      partitions: 10
-      configuration:
-        max.message.bytes: 4194304
-        retention.ms: 432000000
-      security:
-        principals:
-        - principal: CN=SomeDick, OUI=Test
-          operations:
-          - read
-          - describe
-          group:
-          - someGroup
-        - principal: CN=SomeDick2, OUI=Test
-          operations:
-          - write
-          - describe
-      connectionInfo:
-        host: node0.host.local
-        port: 80
-        url: https://node0.host.local/api
-    - type: Papyrus
-      connectionInfo:
-        host: node4.host.local
-        port: 443
-        url: https://node4.host.local/api
-      destinationInfo:
-        host: geo-load-balancer.host.local
-        port: 9092
-        url: https://geo-load-balancer.host.local/api
-      id: 57
+    - segment: sigma
+      elements:
+        - type: Murex
+          connectionInfo:
+            host: node0.host.local
+            port: 80
+            url: https://node0.host.local/api
+          destinationInfo:
+            host: geo-load-balancer.host.local
+          id: 89
+          next: 90
+        - type: kafka
+          name: MUREX.SIGNED.TRADES
+          warn: 10
+          error: 10
+          partitions: 10
+          configuration:
+            max.message.bytes: 4194304
+            retention.ms: 432000000
+          security:
+            principals:
+              - principal: CN=SomeDick, OUI=Test
+                operations:
+                  - read
+                  - describe
+                group:
+                  - someGroup
+              - principal: CN=SomeDick2, OUI=Test
+                operations:
+                  - write
+                  - describe
+          connectionInfo:
+            host: node0.host.local
+            port: 80
+            url: https://node0.host.local/api
+          id: 90
+          next:
+            - 1
+            - 4
+            - 7
+        - type: k8s
+          namespace: sigmaBoy-1
+          clusterName: sigmaBoy-1
+          next:
+            - 10
+            - 88
+          services:
+            - service: murex-signed-signed-trades-gmsb-sowa-out
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+              id: 2
+              next: 3
+            - service: egress
+              connectionInfo:
+                host: node3.host.local
+                port: 3000
+                url: https://node3.host.local/api
+              destinationInfo:
+                host: k8s.host.local
+                port: 80
+                url: https://k8s.host.local/api
+              id: 3
+          connectionInfo:
+            host: node1.host.local
+            port: 8080
+            url: https://node1.host.local/api
+          destinationInfo:
+            host: nginx.host.local
+            port: 8080
+            url: https://nginx.host.local/api
+          id: 1
+        - type: k8s
+          namespace: sigmaBoy-2
+          clusterName: sigmaBoy-2
+          next:
+            - 10
+            - 88
+          services:
+            - service: murex-signed-signed-trades-gmsb-sowa-out
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+              id: 5
+              next: 6
+            - service: egress
+              connectionInfo:
+                host: node3.host.local
+                port: 3000
+                url: https://node3.host.local/api
+              destinationInfo:
+                host: k8s.host.local
+                port: 80
+                url: https://k8s.host.local/api
+              id: 6
+          connectionInfo:
+            host: node1.host.local
+            port: 8080
+            url: https://node1.host.local/api
+          destinationInfo:
+            host: nginx.host.local
+            port: 8080
+            url: https://nginx.host.local/api
+          id: 4
+        - type: k8s
+          namespace: sigmaBoy-3
+          clusterName: sigmaBoy-3
+          next:
+            - 10
+            - 88
+          warn: 10
+          services:
+            - service: murex-signed-signed-trades-gmsb-sowa-out
+              warn: 10
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+              id: 8
+              next: 9
+            - service: egress
+              error: 10
+              connectionInfo:
+                host: node3.host.local
+                port: 3000
+                url: https://node3.host.local/api
+              destinationInfo:
+                host: k8s.host.local
+                port: 80
+                url: https://k8s.host.local/api
+              id: 9
+          connectionInfo:
+            host: node1.host.local
+            port: 8080
+            url: https://node1.host.local/api
+          destinationInfo:
+            host: nginx.host.local
+            port: 8080
+            url: https://nginx.host.local/api
+          id: 7
+    - segment: sigma-alpha
+      elements:
+        - type: nginx
+          warn: 10
+          error: 10
+          requestType:
+            - post
+          requestSchemaValidation: ../requestSchema.xsd
+          responseSchemaValidation: ../responseSchema.xsd
+          nginxPort: 443
+          modSecurityTurnedOffRules:
+            - modsec123
+            - modsec321
+          remoteHost: alphaHost:443
+          connectionInfo:
+            host: node4.host.local
+            port: 443
+            url: https://node4.host.local/api
+          destinationInfo:
+            host: geo-load-balancer.host.local
+            port: 9092
+            url: https://geo-load-balancer.host.local/api
+          id: 10
+          next:
+            - 11
+            - 13
+        - type: nginx
+          error: 10
+          requestType: post
+          requestSchemaValidation: ../requestSchema.xsd
+          responseSchemaValidation: ../responseSchema.xsd
+          nginxPort: 443
+          modSecurityTurnedOffRules:
+            - modsec123
+            - modsec321
+          remoteHost: alphaHost:443
+          connectionInfo:
+            host: node4.host.local
+            port: 443
+            url: https://node4.host.local/api
+          destinationInfo:
+            host: geo-load-balancer.host.local
+            port: 9092
+            url: https://geo-load-balancer.host.local/api
+          id: 88
+          next:
+            - 11
+            - 13
+    - segment: alpha
+      elements:
+        - type: k8s
+          namespace: alpha-1
+          clusterName: alpha-1
+          id: 11
+          next: 15
+          services:
+            - service: syngtp-murex-to-alpha-signed-trades
+              id: 12
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+        - type: k8s
+          namespace: alpha-2
+          clusterName: alpha-2
+          id: 13
+          next: 15
+          services:
+            - service: syngtp-murex-to-alpha-signed-trades
+              id: 14
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+        - type: kafka
+          name: MUREX.TRADES.EVENT.V1
+          id: 15
+          next:
+            - 16
+            - 17
+            - 19
+            - 20
+            - 21
+            - 22
+            - 24
+            - 28
+            - 30
+            - 33
+            - 35
+            - 40
+            - 42
+            - 45
+            - 47
+            - 52
+            - 54
+          partitions: 10
+          configuration:
+            max.message.bytes: 4194304
+            retention.ms: 432000000
+          security:
+            principals:
+              - principal: CN=SomeDick, OUI=Test
+                operations:
+                  - read
+                  - describe
+                group:
+                  - someGroup
+              - principal: CN=SomeDick2, OUI=Test
+                operations:
+                  - write
+                  - describe
+          connectionInfo:
+            host: node0.host.local
+            port: 80
+            url: https://node0.host.local/api
+        - type: sberrec
+          connectionInfo:
+            host: node4.host.local
+            port: 443
+            url: https://node4.host.local/api
+          destinationInfo:
+            host: geo-load-balancer.host.local
+            port: 9092
+            url: https://geo-load-balancer.host.local/api
+          id: 16
+        - type: TLM
+          connectionInfo:
+            host: node4.host.local
+            port: 443
+            url: https://node4.host.local/api
+          destinationInfo:
+            host: geo-load-balancer.host.local
+            port: 9092
+            url: https://geo-load-balancer.host.local/api
+          id: 17
+        - type: k3-trades
+          connectionInfo:
+            host: node4.host.local
+            port: 443
+            url: https://node4.host.local/api
+          destinationInfo:
+            host: geo-load-balancer.host.local
+            port: 9092
+            url: https://geo-load-balancer.host.local/api
+          id: 19
+        - type: nrt2
+          connectionInfo:
+            host: node4.host.local
+            port: 443
+            url: https://node4.host.local/api
+          destinationInfo:
+            host: geo-load-balancer.host.local
+            port: 9092
+            url: https://geo-load-balancer.host.local/api
+          id: 20
+        - type: ptqc
+          connectionInfo:
+            host: node4.host.local
+            port: 443
+            url: https://node4.host.local/api
+          destinationInfo:
+            host: geo-load-balancer.host.local
+            port: 9092
+            url: https://geo-load-balancer.host.local/api
+          id: 21
+        - type: k8s
+          namespace: alpha-1
+          clusterName: alpha-1
+          id: 22
+          next: 26
+          services:
+            - service: syngtp-murex-to-calypso-tcr
+              id: 23
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+        - type: k8s
+          namespace: alpha-2
+          clusterName: alpha-2
+          id: 24
+          next: 26
+          services:
+            - service: syngtp-murex-to-calypso-tcr
+              id: 25
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+        - type: kafka
+          name: GMSERVICEBUS.CALYPSO_TRADES_EVENT.V1
+          id: 26
+          next: 27
+          partitions: 10
+          configuration:
+            max.message.bytes: 4194304
+            retention.ms: 432000000
+          security:
+            principals:
+              - principal: CN=SomeDick, OUI=Test
+                operations:
+                  - read
+                  - describe
+                group:
+                  - someGroup
+              - principal: CN=SomeDick2, OUI=Test
+                operations:
+                  - write
+                  - describe
+          connectionInfo:
+            host: node0.host.local
+            port: 80
+            url: https://node0.host.local/api
+        - type: Calypso
+          connectionInfo:
+            host: node4.host.local
+            port: 443
+            url: https://node4.host.local/api
+          destinationInfo:
+            host: geo-load-balancer.host.local
+            port: 9092
+            url: https://geo-load-balancer.host.local/api
+          id: 27
+        - type: k8s
+          namespace: alpha-1
+          clusterName: alpha-1
+          id: 28
+          next: 32
+          services:
+            - service: syngtp-murex-to-calypso-tcr-fx
+              id: 29
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+        - type: k8s
+          namespace: alpha-2
+          clusterName: alpha-2
+          id: 30
+          next: 32
+          services:
+            - service: syngtp-murex-to-calypso-tcr-fx
+              id: 31
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+        - type: kafka
+          name: GMSERVICEBUS.CALYPSO_TRADES_FX_EVENT.V1
+          id: 32
+          next: 27
+          partitions: 10
+          configuration:
+            max.message.bytes: 4194304
+            retention.ms: 432000000
+          security:
+            principals:
+              - principal: CN=SomeDick, OUI=Test
+                operations:
+                  - read
+                  - describe
+                group:
+                  - someGroup
+              - principal: CN=SomeDick2, OUI=Test
+                operations:
+                  - write
+                  - describe
+          connectionInfo:
+            host: node0.host.local
+            port: 80
+            url: https://node0.host.local/api
+        - type: k8s
+          namespace: alpha-1
+          clusterName: alpha-1
+          id: 33
+          next: 37
+          services:
+            - service: syngtp-murex-to-custody-tcr
+              id: 34
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+        - type: k8s
+          namespace: alpha-2
+          clusterName: alpha-2
+          id: 35
+          next: 37
+          services:
+            - service: syngtp-murex-to-custody-tcr
+              id: 36
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+        - type: kafka
+          name: GMSERVICEBUS.DCS_TRADES_EVENT.V1
+          id: 37
+          next: 38
+          partitions: 10
+          configuration:
+            max.message.bytes: 4194304
+            retention.ms: 432000000
+          security:
+            principals:
+              - principal: CN=SomeDick, OUI=Test
+                operations:
+                  - read
+                  - describe
+                group:
+                  - someGroup
+              - principal: CN=SomeDick2, OUI=Test
+                operations:
+                  - write
+                  - describe
+          connectionInfo:
+            host: node0.host.local
+            port: 80
+            url: https://node0.host.local/api
+        - type: DSA
+          connectionInfo:
+            host: node4.host.local
+            port: 443
+            url: https://node4.host.local/api
+          destinationInfo:
+            host: geo-load-balancer.host.local
+            port: 9092
+            url: https://geo-load-balancer.host.local/api
+          id: 38
+          next: 39
+        - type: DCS
+          connectionInfo:
+            host: node4.host.local
+            port: 443
+            url: https://node4.host.local/api
+          destinationInfo:
+            host: geo-load-balancer.host.local
+            port: 9092
+            url: https://geo-load-balancer.host.local/api
+          id: 39
+        - type: k8s
+          namespace: alpha-1
+          clusterName: alpha-1
+          id: 40
+          next: 44
+          services:
+            - service: syngtp-murex-to-dogma-bs-signed-deals
+              id: 41
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+        - type: k8s
+          namespace: alpha-2
+          clusterName: alpha-2
+          id: 42
+          next: 44
+          services:
+            - service: syngtp-murex-to-dogma-bs-signed-deals
+              id: 43
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+        - type: kafka
+          name: GMSERVICEBUS.DOGMA_BS_SIGNED_TRADES_EVENT.V1
+          id: 44
+          next: 51
+          partitions: 10
+          configuration:
+            max.message.bytes: 4194304
+            retention.ms: 432000000
+          security:
+            principals:
+              - principal: CN=SomeDick, OUI=Test
+                operations:
+                  - read
+                  - describe
+                group:
+                  - someGroup
+              - principal: CN=SomeDick2, OUI=Test
+                operations:
+                  - write
+                  - describe
+          connectionInfo:
+            host: node0.host.local
+            port: 80
+            url: https://node0.host.local/api
+        - type: k8s
+          namespace: alpha-1
+          clusterName: alpha-1
+          id: 45
+          next: 49
+          services:
+            - service: syngtp-murex-to-dogma-signed-deals
+              id: 46
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+        - type: k8s
+          namespace: alpha-2
+          clusterName: alpha-2
+          id: 47
+          next: 49
+          services:
+            - service: syngtp-murex-to-dogma-signed-deals
+              id: 48
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+        - type: kafka
+          name: GMSERVICEBUS.DOGMA_SD_SIGNED_TRADES_EVENT.V1
+          id: 49
+          next: 50
+          partitions: 10
+          configuration:
+            max.message.bytes: 4194304
+            retention.ms: 432000000
+          security:
+            principals:
+              - principal: CN=SomeDick, OUI=Test
+                operations:
+                  - read
+                  - describe
+                group:
+                  - someGroup
+              - principal: CN=SomeDick2, OUI=Test
+                operations:
+                  - write
+                  - describe
+          connectionInfo:
+            host: node0.host.local
+            port: 80
+            url: https://node0.host.local/api
+        - type: Dogma
+          connectionInfo:
+            host: node4.host.local
+            port: 443
+            url: https://node4.host.local/api
+          destinationInfo:
+            host: geo-load-balancer.host.local
+            port: 9092
+            url: https://geo-load-balancer.host.local/api
+          id: 50
+        - type: Dogma-bs
+          connectionInfo:
+            host: node4.host.local
+            port: 443
+            url: https://node4.host.local/api
+          destinationInfo:
+            host: geo-load-balancer.host.local
+            port: 9092
+            url: https://geo-load-balancer.host.local/api
+          id: 51
+        - type: k8s
+          namespace: alpha-1
+          clusterName: alpha-1
+          id: 52
+          next: 56
+          services:
+            - service: syngtp-murex-to-papyrus-signed-deals
+              id: 53
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+        - type: k8s
+          namespace: alpha-2
+          clusterName: alpha-2
+          id: 54
+          next: 56
+          services:
+            - service: syngtp-murex-to-papyrus-signed-deals
+              id: 55
+              subType: kafka-to-rest
+              configs:
+                topicName: DELTA.TOPIC.EVENT.V1
+                kafkaServers: kafkaHost1:9093,kafkaHost2:9093,kafkaHost3:9093
+                kafkaGroup: someGroup
+                restHost: nginxHost:443
+              connectionInfo:
+                host: node2.host.local
+                port: 80
+                url: https://node2.host.local/api
+              destinationInfo:
+                host: egress.host.local
+                port: 8080
+                url: https://egress.host.local/api
+        - type: kafka
+          name: GMSERVICEBUS.PAPYRUS_TRADES_EVENT.V1
+          id: 56
+          next: 57
+          partitions: 10
+          configuration:
+            max.message.bytes: 4194304
+            retention.ms: 432000000
+          security:
+            principals:
+              - principal: CN=SomeDick, OUI=Test
+                operations:
+                  - read
+                  - describe
+                group:
+                  - someGroup
+              - principal: CN=SomeDick2, OUI=Test
+                operations:
+                  - write
+                  - describe
+          connectionInfo:
+            host: node0.host.local
+            port: 80
+            url: https://node0.host.local/api
+        - type: Papyrus
+          connectionInfo:
+            host: node4.host.local
+            port: 443
+            url: https://node4.host.local/api
+          destinationInfo:
+            host: geo-load-balancer.host.local
+            port: 9092
+            url: https://geo-load-balancer.host.local/api
+          id: 57
+  stand: IFT
+  flowName: murex-trades

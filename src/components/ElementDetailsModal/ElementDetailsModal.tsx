@@ -1,18 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, Box, Typography, List, ListItem, ListItemText, IconButton, Chip, Divider, TextField, Button, Autocomplete, Select, MenuItem } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import CloseIconMui from '@mui/icons-material/Close';
+import ReactFlow, { Background, Controls, Node, Edge, NodeProps, MarkerType, Handle, Position } from 'reactflow';
+import 'reactflow/dist/style.css';
 import { Element, Service } from '../../types/integration';
+import { motion } from 'framer-motion';
+import Badge from '../Badge/Badge';
 
 interface ElementDetailsModalProps {
   element: Element | Service | null;
   open: boolean;
   onClose: () => void;
+  onKafkaSave?: (patch: Partial<Element>) => Promise<void>;
+  onNginxSave?: (patch: Partial<Element>) => Promise<void>;
+  onGeoBalancerSave?: (patch: Partial<Element>) => Promise<void>;
 }
 
 const isElement = (element: Element | Service): element is Element => {
@@ -77,6 +83,7 @@ const KafkaSection = ({ element, onSave }: { element: Element, onSave?: (patch: 
   const handleAclEdit = (idx: number) => {
     if (editAclIdx === idx) {
       onSave && onSave({
+        ...element,
         security: {
           principals: security.map(p => ({
             principal: p.principal,
@@ -96,6 +103,7 @@ const KafkaSection = ({ element, onSave }: { element: Element, onSave?: (patch: 
       const updatedSecurity = [...security, { ...newAcl }];
       setSecurity(updatedSecurity);
       onSave && onSave({
+        ...element,
         security: {
           principals: updatedSecurity.map(p => ({
             principal: p.principal,
@@ -114,7 +122,9 @@ const KafkaSection = ({ element, onSave }: { element: Element, onSave?: (patch: 
       acc[key] = isNaN(Number(value)) ? value : Number(value);
       return acc;
     }, {} as Record<string, any>);
+
     onSave && onSave({
+      ...element,
       partitions,
       configuration,
       security: {
@@ -132,9 +142,17 @@ const KafkaSection = ({ element, onSave }: { element: Element, onSave?: (patch: 
 
   return (
     <Box sx={{ mb: 3 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-        Kafka Configuration
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+          Kafka Configuration
+        </Typography>
+        {((element.warn && element.warn > 0) || (element.error && element.error > 0)) && (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {element.warn && element.warn > 0 && <Badge type="warning" count={element.warn} />}
+            {element.error && element.error > 0 && <Badge type="error" count={element.error} />}
+          </Box>
+        )}
+      </Box>
       {!editMode && (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
           <Button
@@ -477,6 +495,7 @@ const NginxSection = ({ element, onSave }: { element: Element, onSave?: (patch: 
       setRequestSchemaContent(tempRequestSchema);
       setEditingRequestSchema(false);
       onSave && onSave({
+        ...element,
         requestType,
         nginxPort: nginxPort ? Number(nginxPort) : undefined,
         remoteHost,
@@ -488,6 +507,7 @@ const NginxSection = ({ element, onSave }: { element: Element, onSave?: (patch: 
       setResponseSchemaContent(tempResponseSchema);
       setEditingResponseSchema(false);
       onSave && onSave({
+        ...element,
         requestType,
         nginxPort: nginxPort ? Number(nginxPort) : undefined,
         remoteHost,
@@ -566,6 +586,7 @@ const NginxSection = ({ element, onSave }: { element: Element, onSave?: (patch: 
     if (type === 'request') {
       setRequestSchemaContent(undefined);
       onSave && onSave({
+        ...element,
         requestType,
         nginxPort: nginxPort ? Number(nginxPort) : undefined,
         remoteHost,
@@ -576,6 +597,7 @@ const NginxSection = ({ element, onSave }: { element: Element, onSave?: (patch: 
     } else {
       setResponseSchemaContent(undefined);
       onSave && onSave({
+        ...element,
         requestType,
         nginxPort: nginxPort ? Number(nginxPort) : undefined,
         remoteHost,
@@ -588,6 +610,7 @@ const NginxSection = ({ element, onSave }: { element: Element, onSave?: (patch: 
 
   const handleSave = () => {
     onSave && onSave({
+      ...element,
       requestType,
       nginxPort: nginxPort ? Number(nginxPort) : undefined,
       remoteHost,
@@ -609,9 +632,17 @@ const NginxSection = ({ element, onSave }: { element: Element, onSave?: (patch: 
   };
   return (
     <Box sx={{ mb: 3 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-        Nginx Configuration
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+          Nginx Configuration
+        </Typography>
+        {((nginx.warn && nginx.warn > 0) || (nginx.error && nginx.error > 0)) && (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {nginx.warn && nginx.warn > 0 && <Badge type="warning" count={nginx.warn} />}
+            {nginx.error && nginx.error > 0 && <Badge type="error" count={nginx.error} />}
+          </Box>
+        )}
+      </Box>
       <List dense>
         <ListItem>
           <ListItemText
@@ -1192,38 +1223,218 @@ const GeoBalancerSection = ({ element, onSave }: { element: Element, onSave?: (p
   );
 };
 
-export const ElementDetailsModal: React.FC<ElementDetailsModalProps & { 
-  onKafkaSave?: (patch: Partial<Element>) => void;
-  onNginxSave?: (patch: Partial<Element>) => void;
-  onGeoBalancerSave?: (patch: Partial<Element>) => void;
-}> = ({ element, open, onClose, onKafkaSave, onNginxSave, onGeoBalancerSave }) => {
+// Компонент для отображения сервиса внутри k8s
+const ServiceNode = ({ data }: NodeProps) => {
+  const warningCount = data.warn || 0;
+  const errorCount = data.error || 0;
+  const isSelected = data.selected;
+
+  const borderStyle = {
+    color: errorCount > 0 ? '#ef5350' : warningCount > 0 ? '#ffa726' : '#2196F3',
+    width: errorCount > 0 ? 2 : warningCount > 0 ? 2 : 1
+  };
+
+  return (
+    <Box sx={{ position: 'relative' }}>
+      <Handle
+        type="target"
+        position={Position.Left}
+        style={{
+          background: '#2196F3',
+          width: '12px',
+          height: '12px',
+          border: '2px solid white',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          left: '-7px',
+          boxShadow: '0 0 0 2px #2196F3',
+          opacity: 0.8
+        }}
+      />
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.8, opacity: 0 }}
+        transition={{
+          type: "spring",
+          stiffness: 260,
+          damping: 20,
+          duration: 0.3
+        }}
+        style={{
+          padding: '12px',
+          borderRadius: '8px',
+          border: `${borderStyle.width}px solid`,
+          borderColor: borderStyle.color,
+          background: isSelected ? '#f8f9fa' : 'white',
+          width: '100%',
+          minWidth: '140px',
+          boxShadow: isSelected
+            ? `0 8px 16px rgba(0,0,0,0.1), 0 0 0 4px ${borderStyle.color}22`
+            : errorCount > 0
+              ? '0 4px 25px rgba(239, 83, 80, 0.35)'
+              : warningCount > 0
+                ? '0 4px 25px rgba(255, 167, 38, 0.35)'
+                : '0 4px 8px rgba(0,0,0,0.05)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: isSelected ? 'translateY(-2px)' : 'none',
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          animation: errorCount > 0 
+            ? 'pulseError 0.7s cubic-bezier(0.4, 0, 0.6, 1) infinite' 
+            : warningCount > 0 
+              ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+              : 'none',
+        }}
+      >
+        <Typography sx={{ fontSize: '14px', fontWeight: 500, textAlign: 'center' }}>
+          {data.label}
+        </Typography>
+        <Typography sx={{ fontSize: '12px', color: 'text.secondary', textAlign: 'center' }}>
+          {data.subType || 'service'}
+        </Typography>
+        {(warningCount > 0 || errorCount > 0) && (
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', mt: 1 }}>
+            {warningCount > 0 && <Badge type="warning" count={warningCount} />}
+            {errorCount > 0 && <Badge type="error" count={errorCount} />}
+          </Box>
+        )}
+      </motion.div>
+      <Handle
+        type="source"
+        position={Position.Right}
+        style={{
+          background: '#2196F3',
+          width: '12px',
+          height: '12px',
+          border: '2px solid white',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          right: '-7px',
+          boxShadow: '0 0 0 2px #2196F3',
+          opacity: 0.8
+        }}
+      />
+    </Box>
+  );
+};
+
+const KubernetesSection = ({ element }: { element: Element }) => {
+  const nodes: Node[] = [];
+  const edges: Edge[] = [];
+
+  // Добавляем узлы сервисов
+  if (element.services) {
+    element.services.forEach((service, index) => {
+      const xPos = 50 + (index * 200);
+      nodes.push({
+        id: service.id.toString(),
+        type: 'service',
+        position: { x: xPos, y: 50 },
+        data: { 
+          label: service.service,
+          subType: service.subType,
+          warn: service.warn || 0,
+          error: service.error || 0,
+          selected: false
+        },
+        style: {
+          width: 140,
+          height: (service.warn && service.warn > 0) || (service.error && service.error > 0) ? 120 : 90
+        },
+      });
+
+      // Добавляем связь между сервисами
+      if (index > 0) {
+        edges.push({
+          id: `e${service.id}-${element.services![index - 1].id}`,
+          source: element.services![index - 1].id.toString(),
+          target: service.id.toString(),
+          type: 'smoothstep',
+          animated: true,
+          style: { 
+            stroke: '#2196F3',
+            strokeWidth: 2,
+            opacity: 0.8
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#2196F3',
+            width: 12,
+            height: 12
+          }
+        });
+      }
+    });
+  }
+
+  return (
+    <Box sx={{ 
+      height: 600, 
+      width: '100%', 
+      bgcolor: 'rgba(33, 150, 243, 0.05)',
+      borderRadius: '8px',
+      p: 2
+    }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+          Kubernetes Configuration
+        </Typography>
+        {((element.warn && element.warn > 0) || (element.error && element.error > 0)) && (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {element.warn && element.warn > 0 && <Badge type="warning" count={element.warn} />}
+            {element.error && element.error > 0 && <Badge type="error" count={element.error} />}
+          </Box>
+        )}
+      </Box>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={{ service: ServiceNode }}
+        fitView
+        minZoom={0.5}
+        maxZoom={2}
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={false}
+        zoomOnScroll={true}
+        panOnScroll={true}
+        preventScrolling={false}
+      >
+        <Background color="#99999911" gap={16} size={1} />
+        <Controls 
+          position="top-right"
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            gap: '8px',
+            padding: '8px',
+            background: 'white',
+            borderRadius: '4px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          }}
+        />
+      </ReactFlow>
+    </Box>
+  );
+};
+
+export const ElementDetailsModal: React.FC<ElementDetailsModalProps> = ({ 
+  element, 
+  open, 
+  onClose,
+  onKafkaSave,
+  onNginxSave,
+  onGeoBalancerSave
+}) => {
   const [currentElement, setCurrentElement] = useState<Element | Service | null>(element);
 
   useEffect(() => {
     setCurrentElement(element);
   }, [element]);
-
-  const handleNginxSave = (patch: Partial<Element>) => {
-    if (currentElement && isElement(currentElement)) {
-      const updatedElement = {
-        ...currentElement,
-        ...patch
-      };
-      setCurrentElement(updatedElement);
-      onNginxSave?.(patch);
-    }
-  };
-
-  const handleGeoBalancerSave = (patch: Partial<Element>) => {
-    if (currentElement && isElement(currentElement)) {
-      const updatedElement = {
-        ...currentElement,
-        ...patch
-      };
-      setCurrentElement(updatedElement);
-      onGeoBalancerSave?.(patch);
-    }
-  };
 
   if (!currentElement) return null;
 
@@ -1231,41 +1442,50 @@ export const ElementDetailsModal: React.FC<ElementDetailsModalProps & {
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
+      maxWidth={currentElement?.type === 'k8s' ? false : 'sm'}
       fullWidth
       PaperProps={{
         sx: {
-          maxHeight: '80vh',
-          minWidth: '400px',
+          width: currentElement?.type === 'k8s' ? '900px' : undefined,
+          height: currentElement?.type === 'k8s' ? '600px' : undefined,
         },
       }}
     >
-      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box>
-          <Typography variant="h6" component="div">
-            {isElement(currentElement) ? currentElement.name : currentElement.service}
+      <DialogTitle>
+        <Typography variant="h6" component="div">
+          {isElement(currentElement) ? currentElement.name || currentElement.type : currentElement.service}
+        </Typography>
+        {isElement(currentElement) && currentElement.type === 'k8s' && (
+          <Typography variant="subtitle1" color="text.secondary">
+            Cluster: {currentElement.clusterName || 'Unknown'}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {currentElement.type}
-          </Typography>
-        </Box>
-        <IconButton
-          aria-label="close"
-          onClick={onClose}
-          sx={{ color: (theme) => theme.palette.grey[500] }}
-        >
-          <CloseIcon />
-        </IconButton>
+        )}
+        {isElement(currentElement) && currentElement.labels && currentElement.labels.length > 0 && (
+          <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {currentElement.labels.map((label: string, index: number) => (
+              <Chip
+                key={index}
+                label={label}
+                size="small"
+                color="primary"
+                variant="outlined"
+              />
+            ))}
+          </Box>
+        )}
       </DialogTitle>
       <DialogContent dividers>
         {isElement(currentElement) && isKafkaElement(currentElement) && (
           <KafkaSection element={currentElement} onSave={onKafkaSave} />
         )}
         {isElement(currentElement) && currentElement.type.toLowerCase() === 'nginx' && (
-          <NginxSection element={currentElement} onSave={handleNginxSave} />
+          <NginxSection element={currentElement} onSave={onNginxSave} />
         )}
         {isElement(currentElement) && ['geobalancer', 'geo-load-balancer'].includes(currentElement.type.toLowerCase()) && (
-          <GeoBalancerSection element={currentElement} onSave={handleGeoBalancerSave} />
+          <GeoBalancerSection element={currentElement} onSave={onGeoBalancerSave} />
+        )}
+        {isElement(currentElement) && currentElement.type.toLowerCase() === 'k8s' && (
+          <KubernetesSection element={currentElement} />
         )}
       </DialogContent>
     </Dialog>

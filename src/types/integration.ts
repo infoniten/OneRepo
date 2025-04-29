@@ -52,9 +52,11 @@ export interface Principal {
 }
 
 export interface Element {
-  id: string;
-  name: string;
+  id: string | number;
+  name?: string;
   type: string;
+  clusterName?: string;
+  labels?: string[];
   // Connection related fields
   connection?: ConnectionInfo;
   connectionInfo?: ConnectionInfo;
@@ -62,8 +64,6 @@ export interface Element {
   services?: Service[];
   // Navigation
   next?: number | number[];
-  // Cluster info
-  clusterName?: string;
   // Status indicators
   warn?: number;
   error?: number;
@@ -99,6 +99,9 @@ export interface Element {
     timeout: number;
     expect: string;
   };
+  // Kubernetes specific fields
+  namespace?: string;
+  subType?: string;
 }
 
 export interface Segment {
@@ -130,4 +133,8 @@ export interface ValidationIssue {
 export interface ElementWithIssues {
   warnings: ValidationIssue[];
   errors: ValidationIssue[];
+}
+
+export function isElement(item: Element | Service): item is Element {
+  return 'type' in item;
 }
